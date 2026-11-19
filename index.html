@@ -92,6 +92,7 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fpt{display:inline-block;margin-left:3px;background:var(--gold);color:#fff;border-radius:3px;padding:0 3px;font-size:8px;vertical-align:1px}
 .gbar .dpbtn{font-size:12px;padding:0 8px}
 .gbar .dpbtn.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:bold}
+.trt td{padding:3px 4px}.trt .btn{padding:4px 8px}
 .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
 .bchip{position:relative;background:var(--box);border:1px solid var(--boxl);border-radius:4px;height:32px;display:flex;align-items:center;justify-content:center;
  font-size:15px;font-weight:bold;white-space:nowrap;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -212,57 +213,139 @@ function validate(g){
   return errs;
 }
 
-/* ===== 交代を反映した現在のオーダー ===== */
+/* ===== 交代を反映した現在のオーダー（JSAオフィシャルルール準拠）=====
+   ・スターティングプレイヤーは一度退いても1回に限り再出場できる。再出場は元の打順のみ
+   ・控えから出場した選手は、退いたら再出場できない
+   ・DPの打順は試合中変更できない（DPの役割は最初のDPの打順に固定）
+   ・DPがFPの守備に就く → FPは退いたことになる（9人）
+   ・FPがDPの打順で打つ → DPは退いたことになる（9人）。DPが再出場するとFPは守備専門に戻る
+   ・DPがFP以外の選手の守備に就く → その選手は打撃のみ（OPO）として残る
+   ・FPの再出場は、守備専門に戻るか、DPの打順に入る（打撃と守備を兼ねる）
+   ・DPとFPは同時に攻撃できない／FPを打撃のみにはできない
+   ・兼務中の選手と交代した選手は、その兼務を引き継ぐ */
 function computeCurrent(g){
   const slots = g.lineup.map(s => ({pid:s.pid, pos:s.pos, re:false}));
   const flex = g.useDP ? {pid:g.flex.pid, pos:g.flex.pos, re:false} : null;
+  const dpSlot = g.useDP ? g.lineup.findIndex(s => s.pos === "DP") : -1;
   const starters = {};
   slots.forEach((s,i) => { if (s.pid) starters[s.pid] = String(i); });
   if (flex && flex.pid) starters[flex.pid] = "F";
-  const out = new Set(), reentered = new Set(), warns = [];
-  const evNotes = [];
+  const out = new Set(), reentered = new Set(), everIn = new Set(Object.keys(starters));
+  const warns = [], evNotes = [];
+  let fpInSlot = null;   // DPの打順に入っているFP
+  const inGame = id => slots.some(s => s.pid === id) || (flex && flex.pid === id);
+  const slotName = k => k === "F" ? "FP" : (Number(k)+1) + "番";
   g.subs.forEach((e, idx) => {
+    const lb = `【${idx+1}】${e.inn}回`, err = m => warns.push(`${lb}：${m}`);
     const tgt = e.slot === "F" ? flex : slots[Number(e.slot)];
-    const lb = `【${idx+1}】${e.inn}回`;
     let note = "";
-    if (!tgt){ warns.push(lb + "：対象の打順がありません"); evNotes.push(""); return; }
-    if (e.kind === "守備位置変更"){ tgt.pos = e.pos || ""; evNotes.push(""); return; }
-    if (e.kind === "FP打撃" && flex){
-      if (tgt.pid) out.add(tgt.pid);
-      tgt.pid = flex.pid; tgt.pos = flex.pos; flex.pid = ""; flex.pos = ""; evNotes.push("DP/FP解除"); return;
+    if (!tgt){ err("対象の打順がありません"); evNotes.push(""); return; }
+    if (e.kind === "守備位置変更"){
+      if (tgt === flex && e.pos === "DP") err("FPを打撃のみにはできません");
+      if (tgt === flex && !tgt.pid) err("FPは出場していません");
+      tgt.pos = e.pos || ""; evNotes.push(""); return;
     }
-    if (e.kind === "DP守備" && flex){
-      tgt.pos = e.pos; if (flex.pid) out.add(flex.pid); flex.pid = ""; flex.pos = ""; evNotes.push("DP/FP解除"); return;
+    if (e.kind === "FP打撃"){
+      if (!flex || !flex.pid) err("FPが出場していません");
+      else if (Number(e.slot) !== dpSlot) err("FPが打てるのはDPの打順だけです");
+      else {
+        if (tgt.pid) out.add(tgt.pid);
+        tgt.pid = flex.pid; tgt.pos = flex.pos; fpInSlot = flex.pid; flex.pid = ""; flex.pos = "";
+      }
+      evNotes.push("DP退く"); return;
+    }
+    if (e.kind === "DP守備"){
+      if (!flex || !flex.pid) err("FPが出場していません");
+      else if (Number(e.slot) !== dpSlot) err("DPの打順ではありません");
+      else { tgt.pos = flex.pos; out.add(flex.pid); flex.pid = ""; flex.pos = ""; }
+      evNotes.push("FP退く"); return;
     }
     const inP = e.pid, prev = tgt.pid;
     if (!inP){ evNotes.push(""); return; }
-    const inGame = slots.some(s => s.pid === inP) || (flex && flex.pid === inP);
-    const dpCase = g.useDP && (flex && (inP === flex.pid || tgt === flex || tgt.pos === "DP"));
-    if (inGame && !dpCase) warns.push(`${lb}：${pname(inP)} は出場中です`);
+    if (inGame(inP)) err(`${pname(inP)} は出場中です`);
     if (starters[inP] !== undefined){
       if (out.has(inP)){
-        if (reentered.has(inP)) warns.push(`${lb}：${pname(inP)} のリエントリーは2回目です（1回まで）`);
-        if (starters[inP] !== String(e.slot)) warns.push(`${lb}：${pname(inP)} は元の打順（${starters[inP]==="F"?"FLEX":(Number(starters[inP])+1)+"番"}）にしか戻れません`);
+        if (reentered.has(inP)) err(`${pname(inP)} はすでに再出場しています（再出場は1回まで）`);
+        const ok = starters[inP] === String(e.slot) || (starters[inP] === "F" && Number(e.slot) === dpSlot);
+        if (!ok) err(`${pname(inP)} は元の打順（${slotName(starters[inP])}）にしか戻れません`);
         reentered.add(inP); out.delete(inP); note = "リエントリー";
       }
-    } else if (out.has(inP)) {
-      warns.push(`${lb}：${pname(inP)} は控えから出て一度退いたため再出場できません`);
+    } else if (everIn.has(inP)) err(`${pname(inP)} は控えから出場して退いたため、再出場できません`);
+    everIn.add(inP);
+    // 空いたFP枠に入る（FPの再出場・新たなFP）→ DPは打撃専門に戻る
+    if (tgt === flex && !prev){
+      const dp = slots[dpSlot];
+      if (!dp || !/^\d$/.test(dp.pos)) err("FPが入る守備位置がありません");
+      else { flex.pid = inP; flex.pos = dp.pos; dp.pos = "DP"; }
+      flex.re = note === "リエントリー"; evNotes.push(note || "FP"); return;
+    }
+    // DPの打順でFPが打っているところへDPが再出場 → FPは守備専門に戻る
+    if (Number(e.slot) === dpSlot && fpInSlot && prev === fpInSlot && flex && !flex.pid){
+      flex.pid = prev; flex.pos = tgt.pos; tgt.pid = inP; tgt.pos = "DP"; tgt.re = note === "リエントリー"; fpInSlot = null;
+      evNotes.push((note ? note + "・" : "") + "FPは守備専門に戻る"); return;
     }
     if (prev && prev !== inP) out.add(prev);
+    if (prev === fpInSlot) fpInSlot = null;
     tgt.pid = inP; tgt.re = note === "リエントリー";
-    if (e.pos) tgt.pos = e.pos; else if (e.kind === "代打") tgt.pos = "PH"; else if (e.kind === "代走") tgt.pos = "PR";
+    if (e.pos) tgt.pos = e.pos;
+    else if (tgt.pos !== "DP"){ if (e.kind === "代打") tgt.pos = "PH"; else if (e.kind === "代走") tgt.pos = "PR"; else if (tgt.pos === "PH" || tgt.pos === "PR") tgt.pos = ""; }
     evNotes.push(note);
   });
-  return { slots, flex, out, warns, evNotes, starters, reentered };
+  // 今の状態のチェック（守備が決まるまでの途中は「未完了」として表示）
+  const info = [];
+  const all = slots.concat(flex && flex.pid ? [flex] : []);
+  for (let i = 1; i <= 9; i++){
+    const n = all.filter(s => s.pid && s.pos === String(i)).length;
+    if (n === 0) info.push(posLabel(String(i)) + " が空いています");
+    if (n > 1) info.push(posLabel(String(i)) + " が重複しています");
+  }
+  const batOnly = slots.filter(s => s.pid && s.pos === "DP");
+  if (batOnly.length > 1) info.push("打撃のみの選手が2人います");
+  if (batOnly.length && !(flex && flex.pid)) info.push(`FPがいないため ${pname(batOnly[0].pid)} を守備に就けてください`);
+  const ph = slots.filter(s => s.pid && (s.pos === "PH" || s.pos === "PR"));
+  if (ph.length) info.push("代打・代走の選手の守備が未定です：" + ph.map(s => pname(s.pid)).join("、"));
+  return { slots, flex, out, warns, info, evNotes, starters, reentered, dpSlot };
 }
 
+/* ===== テンポラリーランナー（捕手の臨時代走） =====
+   二死で捕手が走者のとき（二死後に捕手が出塁したときも）、攻撃側の選択で使える。
+   走るのは、塁上の走者以外で、打順が最後に回ってくる選手。交代には数えない。 */
+let tr = null;
+function trHtml(){
+  if (!tr) return "";
+  const g = G(), c = computeCurrent(g);
+  const ci = c.slots.findIndex(s => s.pos === "2");
+  let body;
+  if (ci < 0) body = `<p>打順の中に捕手がいません${c.flex && c.flex.pos === "2" ? "（捕手がFPのため、捕手は打席に立たず走者になりません）" : ""}。</p>`;
+  else {
+    let ans = -1;
+    for (let k = 1; k <= 9; k++){ const j = (tr.next - k + 9) % 9; if (j !== ci && !tr.on.has(j) && j !== tr.next){ ans = j; break; } }
+    body = `<div class="am" style="text-align:left">「次の打者」と「塁上の走者」を選んでください（捕手 ${esc(pname(c.slots[ci].pid))} は走者として扱います）</div>
+    <table class="trt">${c.slots.map((s,i) => `<tr><td class="num">${i+1}</td><td>${esc(pname(s.pid))}${i===ci?`<span class="tag">捕手</span>`:""}</td>
+      <td><button class="btn s ${tr.next===i?"":"w"}" data-act="trNext" data-i="${i}">次打者</button></td>
+      <td>${i===ci?"":`<button class="btn s ${tr.on.has(i)?"":"w"}" data-act="trOn" data-i="${i}">塁上</button>`}</td></tr>`).join("")}</table>
+    <div class="at" style="margin-top:6px">臨時代走：<b>${ans >= 0 ? `${ans+1}番 ${esc(pname(c.slots[ans].pid))}` : "該当者なし"}</b></div>
+    <div class="am">交代ではないので記録はしません</div>`;
+  }
+  return `<div class="ov"><div class="ask">${body}<button class="btn w" data-act="trClose">閉じる</button></div></div>`;
+}
+/* ===== ルール違反のお知らせ ===== */
+let notice = null;
+function noticeHtml(){
+  if (!notice) return "";
+  return `<div class="ov" style="align-items:center"><div class="ask" style="border-radius:14px;margin:16px">
+    <div class="at" style="color:var(--err);font-weight:bold">ルール上できない交代です</div>
+    <div style="font-size:14px;line-height:1.6">${notice.map(esc).join("<br>")}</div>
+    <div class="am">記録していません（日本ソフトボール協会オフィシャルルール）</div>
+    <button class="btn" data-act="noticeOk">OK</button></div></div>`;
+}
 /* ===== 描画 ===== */
 function render(){
   const g = G();
   document.getElementById("hdrGame").textContent = (S.team ? S.team + "　" : "") + gameTitle(g);
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   const app = document.getElementById("app");
-  app.innerHTML = ({players: vPlayers, order: vOrder, subs: vSubs, sheet: vSheet, data: vData}[S.tab] || vPlayers)();
+  app.innerHTML = ({players: vPlayers, order: vOrder, subs: vSubs, sheet: vSheet, data: vData}[S.tab] || vPlayers)() + noticeHtml() + trHtml();
 }
 
 function playerOptions(sel, excludeIds){
@@ -311,7 +394,7 @@ const FXY = { "8":[50,21],"7":[17,47],"9":[83,47],"6":[32,87],"4":[68,87],"5":[1
 let infoOpen = false;
 function isLive(){ return S.mode === "game"; }
 function allSlots(g){ return g.useDP ? g.lineup.concat([g.flex]) : g.lineup; }
-function fieldHtml(slots, flex, live){
+function fieldHtml(slots, flex, live, dpSlot){
   const at = {};
   slots.concat(flex ? [flex] : []).forEach(s => { if (/^\d$/.test(s.pos) && s.pid) at[s.pos] = s.pid; });
   const dp = slots.find(s => s.pos === "DP" && s.pid);
@@ -322,7 +405,7 @@ function fieldHtml(slots, flex, live){
     const fp = flex && flex.pid && flex.pid === id && k !== "DP";
     const cls = "pbox" + (k === "DP" ? " dpb" : "") + (p ? "" : " empty") + (live && pick && pick.t==="pos" && pick.v===k ? " sel" : "");
     return `<div class="${cls}" ${live?`data-dt="pos" data-dv="${k}"`:""} style="left:${x}%;top:${y}px">
-      <div class="pl">${k === "DP" ? "DP（指名選手）" : POS_FULL[k]}${fp ? `<span class="fpt">FP</span>` : ""}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
+      <div class="pl">${k === "DP" ? (dpSlot >= 0 && slots.findIndex(s => s.pos === "DP") !== dpSlot && id ? "OPO（打撃のみ）" : "DP（指名選手）") : POS_FULL[k]}${fp ? `<span class="fpt">FP</span>` : ""}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
   }).join("");
   return `<div class="fld">
     <svg viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
@@ -345,10 +428,10 @@ function vOrder(){
   const bench = sortedPlayers().filter(p => !used.includes(p.id));
   const sel = (t,v) => pick && pick.t===t && String(pick.v)===String(v) ? " sel" : "";
   const row = (lbl, v, s, orig) => { const p = P(s.pid);
-    const mark = live && orig && orig.pid !== s.pid ? (s.re ? `<i class="tg">再</i>` : `<i class="tg">途中</i>`) : "";
+    const mark = live && s.pid && orig && orig.pid !== s.pid ? (s.re ? `<i class="tg">再</i>` : `<i class="tg">途中</i>`) : "";
     return `<div class="lr" data-dt="slot" data-dv="${v}"><div class="o">${lbl}</div>
-      <div class="p"><span class="${s.pos?"":"un"}${sel("lpos",v)}" data-dt="lpos" data-dv="${v}">${s.pos ? esc(POS[s.pos]) : "未"}</span></div>
-      <div class="n"><span class="${p?"":"empty"}${sel("slot",v)}" data-dt="slot" data-dv="${v}">${p ? esc(p.name) : "（空き）"}${mark}</span></div><div class="b">${esc(p?.num ?? "")}</div></div>`; };
+      <div class="p"><span class="${s.pos?"":"un"}${sel("lpos",v)}" data-dt="lpos" data-dv="${v}">${s.pos ? (live && s.pos === "DP" && String(v) !== String(bd.c.dpSlot) ? "OPO" : esc(POS[s.pos])) : (s.pid ? "未" : "")}</span></div>
+      <div class="n"><span class="${p?"":"empty"}${sel("slot",v)}" data-dt="slot" data-dv="${v}">${p ? esc(p.name) : (live && v === "F" ? "（FPなし：控えを入れると再開）" : "（空き）")}${mark}</span></div><div class="b">${esc(p?.num ?? "")}</div></div>`; };
   const benchChip = p => {
     let cls = "bchip", tag = "";
     if (live && bd.c.out.has(p.id)){
@@ -384,21 +467,23 @@ function vOrder(){
       <button class="btn r s" data-act="delGame">削除</button>
     </div>
   </section>` : ""}
-  ${fieldHtml(bd.slots, bd.flex, true)}
+  ${fieldHtml(bd.slots, bd.flex, true, live ? bd.c.dpSlot : -1)}
   <div class="ls${live?" live":""}">
     <div class="lh"><div>打順</div><div>守備</div><div>名前${!live && !errs.length ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">✓ OK</span>` : live ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">試合中（交代は自動記録）</span>` : ""}</div><div>背番号</div></div>
     ${bd.slots.map((s,i) => row(i+1, i, s, g.lineup[i])).join("")}
-    ${bd.flex ? (live && !bd.flex.pid ? `<div class="lr"><div class="o">FP</div><div class="p"></div><div class="n muted" style="padding-left:10px">DP/FP解除</div><div></div></div>` : row("FP", "F", bd.flex, g.flex)) : ""}
+    ${bd.flex ? row("FP", "F", bd.flex, g.flex) : ""}
     <div class="lsep" data-dt="benchArea">${live ? "控え・退いた選手" : "控え選手（ここに落とすとベンチへ）"}</div>
     <div class="bgrid">${bench.length ? bench.map(benchChip).join("") : `<span class="muted">なし</span>`}</div>
   </div>
   ${errs.length ? `<div class="msg err olist">${errs.map(esc).join("<br>")}</div>` : ""}
-  ${live && bd.c.warns.length ? `<div class="msg warn olist">${bd.c.warns.map(esc).join("<br>")}</div>` : ""}
+  ${live && bd.c.warns.length ? `<div class="msg err olist">ルール違反の記録があります（交代タブで確認）：<br>${bd.c.warns.map(esc).join("<br>")}</div>` : ""}
+  ${live && bd.c.info.length ? `<div class="msg warn olist">${bd.c.info.map(esc).join("<br>")}</div>` : ""}
   <p class="hint">${live
     ? "控えの選手を打順か図へ＝交代（代打・代走・守備）<br>守備欄や図の上で入れ替え＝守備位置の変更（打順は変わりません）"
     : "名前をドラッグ（またはタップ→タップ）で入れ替え。<br>名前同士＝打順の入れ替え／守備欄・図の上＝守備の入れ替え／控えと＝選手の入れ替え"}
-    ${g.useDP ? (live ? "<br>DP/FP：FPの名前をDPの打順へ＝FPが打撃に入る（DP退く）／DPを図のFPの守備へ＝DPが守備に就く（FP退く）"
+    ${g.useDP ? (live ? "<br>DP/FP：FPをDPの打順へ＝FPが打つ（DP退く）／DPをFPの守備へ＝DPが守る（FP退く）／DPを他の守備へ＝その選手は打撃のみ（OPO）"
                       : "<br>DP/FP：打順の選手を図の「DP」へ＝DPに指定／控えをFPの行へ入れ、FPを空いた守備へ") : ""}</p>
+  ${live ? `<div class="btns noprint"><button class="btn w s" data-act="trOpen">捕手の臨時代走は誰？</button></div>` : ""}
   ${askHtml()}`;
 }
 
@@ -410,10 +495,12 @@ function askHtml(){
   const cur = ask.slot === "F" ? c.flex : c.slots[Number(ask.slot)];
   return `<div class="ov"><div class="ask">
     <div class="at">${esc(pname(cur.pid)||"—")} → <b>${esc(pname(ask.pid))}</b></div>
-    <div class="am">${ask.slot==="F"?"FLEX":(Number(ask.slot)+1)+"番"}／${g.inn||1}回</div>
+    <div class="am">${ask.slot==="F"?"FP":(Number(ask.slot)+1)+"番"}／${g.inn||1}回</div>
     <button class="btn" data-act="askKind" data-k="代打">代打</button>
     <button class="btn" data-act="askKind" data-k="代走">代走</button>
-    <button class="btn" data-act="askKind" data-k="守備交代">守備交代（${esc(/^\d$|DP/.test(cur.pos)?POS[cur.pos]:"守備未定")}）</button>
+    ${cur.pos === "DP"
+      ? `<button class="btn" data-act="askKind" data-k="交代">交代（${Number(ask.slot)===c.dpSlot?"DP":"打撃のみ"}のまま）</button>`
+      : `<button class="btn" data-act="askKind" data-k="守備交代">守備交代（${esc(/^\d$/.test(cur.pos)?POS[cur.pos]:"守備未定")}）</button>`}
     <button class="btn w" data-act="askKind" data-k="">やめる</button>
   </div></div>`;
 }
@@ -481,30 +568,39 @@ function gameMove(src, dst){
     if (a.pid && b.pid) return false;
     if (dst.t === "benchArea") return false;
     if (!slotKey){ toast("空いている守備です。先に打順の選手をそこへ動かしてください"); return false; }
+    // 空いたFP枠へ（FPの再出場・新しいFP）
+    if (slotKey === "F" && c.flex && !c.flex.pid){
+      g.subs.push({inn, kind:"FP出場", slot: "F", pid: benchPid, pos: "", outPid: "", b: batch});
+      return afterGame(c);
+    }
     // 図の守備位置に落としたら、その守備で交代
     if (dst.t === "pos" && a.pid){
-      g.subs.push({inn, kind:"守備交代", slot: slotKey, pid: benchPid, pos: dst.v, outPid: cur(slotKey).pid, b: batch});
-      afterGame(c); return true;
+      const hp = cur(slotKey).pos;
+      g.subs.push({inn, kind: hp === "DP" ? "交代" : "守備交代", slot: slotKey, pid: benchPid, pos: hp === "DP" ? "" : dst.v, outPid: cur(slotKey).pid, b: batch});
+      return afterGame(c);
     }
     ask = {slot: slotKey, pid: benchPid}; return true;
   }
   if (dst.t === "benchArea"){ toast("下げる選手は、控えの選手を上に重ねて交代してください"); return false; }
   if (src.t === "pos" && !a.slot){ toast("その守備には選手がいません"); return false; }
-  // DP/FLEXの特例
-  if (c.flex && c.flex.pid){
-    const dpKey = holderKey(c.slots, null, "DP");
-    // FPがDPの打順に入る（DPは退く）
-    if (a.slot === "F" && dpKey && ((dst.t === "slot" && b.slot === dpKey) || (dst.t === "pos" && dst.v === "DP"))){
+  // DP/FPの特例
+  const dpKey = c.dpSlot >= 0 ? String(c.dpSlot) : null;
+  if (c.flex && c.flex.pid && dpKey){
+    const toDP = (dst.t === "slot" || dst.t === "lpos") ? b.slot === dpKey : (dst.t === "pos" && dst.v === "DP");
+    // FPがDPの打順で打つ（DPは退く）
+    if (a.slot === "F" && toDP){
+      if (dst.t === "pos" && b.slot !== dpKey){ toast("FPは打撃のみ（OPO）にはなれません"); return false; }
       g.subs.push({inn, kind:"FP打撃", slot: dpKey, pid: c.flex.pid, pos: c.flex.pos, outPid: cur(dpKey).pid, b: batch});
-      afterGame(c); return true;
+      return afterGame(c);
     }
     // DPがFPの守備に就く（FPは退く）
-    if (dpKey && a.slot === dpKey && b.slot === "F" && dst.t !== "slot"){
+    if (a.slot === dpKey && b.slot === "F" && dst.t !== "slot"){
       g.subs.push({inn, kind:"DP守備", slot: dpKey, pid: cur(dpKey).pid, pos: c.flex.pos, outPid: c.flex.pid, b: batch});
-      afterGame(c); return true;
+      return afterGame(c);
     }
   }
-  if (b.slot === "F" && c.flex && !c.flex.pid){ toast("DP/FPは解除されています"); return false; }
+  if (b.slot === "F" && c.flex && !c.flex.pid){ toast("FPは今出場していません（控えから入れてください）"); return false; }
+  if (a.slot === "F" && dst.t === "slot"){ toast("FPが打てるのはDPの打順だけです"); return false; }
   // 名前同士（打順の入れ替え）は試合中は不可
   if (dst.t === "slot" && src.t === "slot"){ toast("試合中は打順を入れ替えられません（守備欄か図でドラッグ）"); return false; }
   // 守備位置の入れ替え
@@ -515,17 +611,14 @@ function gameMove(src, dst){
   if (!newPos && !oldPos) return false;
   g.subs.push({inn, kind:"守備位置変更", slot: S, pid:"", outPid:"", pos: newPos || "", b: batch});
   if (H) g.subs.push({inn, kind:"守備位置変更", slot: H, pid:"", outPid:"", pos: /^\d$|DP/.test(oldPos) ? oldPos : "", b: batch});
-  afterGame(c); return true;
+  return afterGame(c);
 }
 function afterGame(before){
   const g = G(), w = computeCurrent(g).warns;
   if (w.length > before.warns.length){
-    const msg = w.slice(before.warns.length).map(x => x.replace(/^【\d+】/, "")).join("\n");
-    if (!confirm(msg + "\n\nルール上できない交代です。それでも記録しますか？")){
-      const lb = g.subs[g.subs.length-1].b; g.subs = g.subs.filter(e => e.b !== lb);
-      toast("取りやめました"); return false;
-    }
-    toast("記録しました（ルール上の注意あり）"); return true;
+    const lb = g.subs[g.subs.length-1].b; g.subs = g.subs.filter(e => e.b !== lb);
+    notice = w.slice(before.warns.length).map(x => x.replace(/^【\d+】\d+回：/, ""));
+    return false;
   }
   toast("記録しました"); return true;
 }
@@ -533,7 +626,7 @@ function keyOf(el){ return el ? {t: el.dataset.dt, v: el.dataset.dv} : null; }
 function emptyPos(k){ const g = G(), bd = board(g); return k.t === "pos" && !holderKey(bd.slots, bd.flex, k.v); }
 let drag = null;
 document.addEventListener("pointerdown", e => {
-  if (S.tab !== "order" || ask) return;
+  if (S.tab !== "order" || ask || notice || tr) return;
   const el = e.target.closest(".pbox[data-dt], .lr .n span[data-dt], .lr .p span[data-dt], .bchip[data-dt]");
   if (!el) return;
   drag = {el, x: e.clientX, y: e.clientY, on: false, ghost: null, over: null};
@@ -636,8 +729,8 @@ function vSheet(){
   const g = G();
   const c = computeCurrent(g);
   const base = sheetMode === "start"
-    ? { slots: g.lineup, flex: g.useDP ? g.flex : null }
-    : { slots: c.slots, flex: c.flex };
+    ? { slots: g.lineup, flex: g.useDP ? g.flex : null, dp: -1 }
+    : { slots: c.slots, flex: c.flex, dp: c.dpSlot };
   const used = base.slots.map(s=>s.pid).concat(base.flex ? [base.flex.pid] : []);
   const bench = sortedPlayers().filter(p => !used.includes(p.id) && !(sheetMode==="now" && c.out.has(p.id)));
   const row = (lb, s) => { const p = P(s.pid) || {}; return `<tr><td>${lb}</td><td>${esc(posLabel(s.pos))}</td><td>${esc(p.num)}</td><td class="nm">${esc(p.name)}</td><td>${esc(p.bt||"")}</td></tr>`; };
@@ -660,7 +753,7 @@ function vSheet(){
     </table>
     <div style="margin-top:10px;font-size:13px"><b>控え：</b>${bench.map(p=>esc((p.num!==""?"#"+p.num+" ":"")+p.name)).join("、") || "なし"}</div>
   </section>
-  ${fieldHtml(base.slots, base.flex, false)}`;
+  ${fieldHtml(base.slots, base.flex, false, base.dp)}`;
 }
 function sheetText(){
   const g = G(); const c = computeCurrent(g);
@@ -727,13 +820,18 @@ document.addEventListener("click", ev => {
     }
     pick = null;
   }
+  else if (a === "noticeOk"){ notice = null; }
+  else if (a === "trOpen"){ const c = computeCurrent(g); tr = { next: 0, on: new Set() }; }
+  else if (a === "trClose"){ tr = null; }
+  else if (a === "trNext"){ tr.next = Number(b.dataset.i); tr.on.delete(tr.next); }
+  else if (a === "trOn"){ const i = Number(b.dataset.i); if (tr.on.has(i)) tr.on.delete(i); else if (i !== tr.next) tr.on.add(i); }
   else if (a === "mode2"){ S.mode = b.dataset.m; pick = null; }
   else if (a === "inn"){ g.inn = Math.min(20, Math.max(1, (g.inn||1) + Number(b.dataset.d))); }
   else if (a === "askKind"){
     const k = b.dataset.k;
     if (k){
       const c = computeCurrent(g), cur = ask.slot === "F" ? c.flex : c.slots[Number(ask.slot)];
-      const pos = k === "守備交代" ? (/^\d$|DP/.test(cur.pos) ? cur.pos : "") : "";
+      const pos = k === "守備交代" ? (/^\d$/.test(cur.pos) ? cur.pos : "") : "";
       g.subs.push({inn: g.inn||1, kind: k, slot: ask.slot, pid: ask.pid, pos, outPid: cur.pid, b: Date.now()});
       afterGame(c);
     }
@@ -772,9 +870,8 @@ document.addEventListener("click", ev => {
       if (e.kind === "守備交代" && !e.pos) return toast("守備位置を選んでください");
       e.outPid = tgt.pid;
     }
-    g.subs.push(e);
-    const w = computeCurrent(g).warns;
-    toast(w.length > c.warns.length ? "記録しました（ルール上の注意あり）" : "記録しました");
+    e.b = Date.now(); g.subs.push(e);
+    afterGame(c);
   }
   else if (a === "delSub"){ if (!confirm("この交代を取り消しますか？")) return; g.subs.splice(Number(b.dataset.i), 1); }
   else if (a === "mode"){ sheetMode = b.dataset.m; }
