@@ -162,52 +162,53 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .gbar select,.gbar button{border-radius:10px}
 #toast{bottom:calc(28px + env(safe-area-inset-bottom));background:rgba(20,30,25,.92);border-radius:999px;padding:10px 18px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 
+/* ===== 画面切り替え ===== */
+main.go-in{animation:slideIn .42s cubic-bezier(.2,.85,.25,1)}
+header.go-in{animation:fadeIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+.gbar .plus{font-size:20px;font-weight:700;padding:0 12px;line-height:1}
+
 /* ===== タイトル画面 ===== */
+html{background:var(--deep)}
 body.is-home{background:var(--deep)}
 body.is-home main{padding:0;max-width:none}
-.home{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;
- background:radial-gradient(120% 70% at 50% 0%,#2c6e57 0%,#17463a 45%,var(--deep) 100%);color:#fff;
- padding:calc(26px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
-.home .hfield{position:absolute;left:0;top:0;width:100%;height:62%;fill:none;stroke:rgba(255,255,255,.06);stroke-width:1.2;pointer-events:none}
-.hero{position:relative;text-align:center;padding:6px 0 20px;animation:fadeup .5s ease}
-.emb{width:84px;height:84px;border-radius:18px;box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
-.wm{margin-top:14px;font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;font-weight:800;font-size:38px;letter-spacing:.24em;padding-left:.24em;
- color:#fbf7ea;text-shadow:0 2px 14px rgba(0,0,0,.35);line-height:1.1}
-.tgl{font-size:10px;letter-spacing:.38em;padding-left:.38em;color:var(--gold);font-weight:700;margin-top:6px}
-.tm{display:inline-block;margin-top:12px;font-size:13px;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)}
-.hbody{position:relative;display:flex;flex-direction:column;gap:10px;animation:fadeup .55s ease .05s both}
-.home button{font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.home{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;color:#fff;
+ background:radial-gradient(130% 80% at 50% 18%,#2f735b 0%,#18493b 42%,var(--deep) 85%);
+ padding:calc(20px + env(safe-area-inset-top)) 22px calc(26px + env(safe-area-inset-bottom))}
+.home .glow{position:absolute;left:50%;top:22%;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;
+ background:radial-gradient(circle,rgba(194,161,78,.22),rgba(194,161,78,0) 65%);pointer-events:none}
+.home .hfield{position:absolute;left:0;top:4%;width:100%;height:70%;fill:none;stroke:rgba(255,255,255,.055);stroke-width:1.2;pointer-events:none}
+.home .hero{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px 0 20px}
+.home .emb{width:104px;height:104px;border-radius:24px;box-shadow:0 16px 40px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.1);animation:pop .6s cubic-bezier(.2,1.3,.4,1) both}
+.home .wm{margin-top:22px;font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;font-weight:800;font-size:42px;letter-spacing:.26em;padding-left:.26em;
+ color:#fbf7ea;text-shadow:0 2px 18px rgba(0,0,0,.35);line-height:1.1;animation:rise .6s cubic-bezier(.2,.85,.25,1) .08s both}
+.home .tgl{font-size:10px;letter-spacing:.4em;padding-left:.4em;color:var(--gold);font-weight:700;margin-top:10px;animation:rise .6s cubic-bezier(.2,.85,.25,1) .14s both}
+.home .tm{margin-top:18px;font-size:13px;padding:5px 16px;border-radius:999px;color:rgba(255,255,255,.9);
+ background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);animation:rise .6s cubic-bezier(.2,.85,.25,1) .2s both}
+.home .acts{position:relative;display:flex;flex-direction:column;gap:12px}
+.home button{font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;transition:transform .12s ease}
+.home button:active{transform:scale(.97)}
 .home svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.gm{position:relative;display:grid;grid-template-columns:1fr auto;text-align:left;border:0;border-radius:18px;padding:16px 18px 14px;color:#1d2a24;
- background:linear-gradient(180deg,#fff,#f6f3e8);box-shadow:0 14px 34px rgba(0,0,0,.32),inset 0 0 0 1px rgba(194,161,78,.35)}
-.gm .gl{grid-column:1/3;font-size:11px;font-weight:800;letter-spacing:.2em;color:#9a7a2c}
-.gm .gd{grid-column:1/3;font-size:30px;font-weight:800;color:var(--deep);letter-spacing:.02em;line-height:1.25;margin-top:2px}
-.gm .gt{grid-column:1/3;font-size:14px;color:#55625b;margin-top:2px}
-.gm .go{grid-column:1/3;font-size:20px;font-weight:700;margin-top:2px}
-.gm .gf{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #e7e1cc}
-.gm .gb{display:flex;align-items:center;gap:2px;background:var(--main);color:#fff;font-weight:700;font-size:15px;padding:9px 10px 9px 16px;border-radius:999px;box-shadow:0 4px 12px rgba(27,77,62,.35)}
-.gm .gb svg{width:18px;height:18px;stroke-width:2.4}
-.st{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eceee9;color:#66706b}
-.st.ok{background:#e3f1e6;color:#1e7a45}.st.live{background:#fbe9e7;color:#b03a2e}
-.nw{display:flex;align-items:center;justify-content:center;gap:6px;border:1px dashed rgba(255,255,255,.35);background:rgba(255,255,255,.06);color:#fff;border-radius:14px;padding:12px;font-size:15px;font-weight:600}
-.nw svg{width:18px;height:18px;stroke-width:2.4}
-.rc{margin-top:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden}
-.rh{font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.55);padding:10px 14px 4px;font-weight:700}
-.ri{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:#fff;padding:10px 14px;text-align:left;border-top:1px solid rgba(255,255,255,.07)}
-.ri:first-of-type{border-top:0}
-.ri .rd{font-size:13px;color:var(--gold);font-weight:700;min-width:62px}.ri .rt{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ri svg{width:16px;height:16px;opacity:.5}
-.onb{display:flex;align-items:center;gap:12px;text-align:left;border:0;border-radius:16px;padding:14px;background:linear-gradient(135deg,#e2c46e,#b8913a);color:#2a2410;box-shadow:0 10px 24px rgba(0,0,0,.3)}
-.onb .ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center}
-.onb .ic svg{width:24px;height:24px}
-.onb b{display:block;font-size:16px}.onb small{font-size:12px;opacity:.8}
-.onb .cv{margin-left:auto}.onb .cv svg{width:20px;height:20px}
-.sub{position:relative;margin-top:auto;padding-top:22px;display:flex;gap:10px;animation:fadeup .6s ease .1s both}
-.sub button{flex:1;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.85);
- border-radius:12px;padding:10px 12px;text-align:left;font-size:14px;font-weight:600}
-.sub svg{width:22px;height:22px;color:var(--gold);flex:0 0 auto}
-.sub small{display:block;font-size:11px;font-weight:normal;color:rgba(255,255,255,.5);margin-top:1px}
-.home button:active{transform:scale(.98)}
+.home .pri{display:flex;align-items:center;gap:14px;width:100%;border:0;border-radius:20px;padding:16px 16px 16px 16px;text-align:left;color:var(--deep);
+ background:linear-gradient(180deg,#fffdf6,#efe6cc);box-shadow:0 18px 40px rgba(0,0,0,.4),inset 0 0 0 1px rgba(194,161,78,.5);
+ animation:rise .6s cubic-bezier(.2,.85,.25,1) .26s both}
+.home .pri .ic{flex:0 0 auto;width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;color:#f3e3b0;
+ background:linear-gradient(160deg,#2a6b55,#123d30);box-shadow:inset 0 0 0 1px rgba(194,161,78,.45)}
+.home .pri .ic svg{width:28px;height:28px}
+.home .pri .tx{flex:1}
+.home .pri b{display:block;font-size:22px;letter-spacing:.06em}
+.home .pri small{display:block;font-size:12px;color:#6d6a5c;margin-top:2px}
+.home .pri .cv{width:34px;height:34px;border-radius:50%;background:var(--main);color:#fff;display:flex;align-items:center;justify-content:center}
+.home .pri .cv svg{width:18px;height:18px;stroke-width:2.6}
+.home .sec{display:flex;gap:10px;animation:rise .6s cubic-bezier(.2,.85,.25,1) .34s both}
+.home .sec button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+ color:rgba(255,255,255,.82);border-radius:14px;padding:13px 10px;font-size:14px;font-weight:600}
+.home .sec svg{width:19px;height:19px;color:var(--gold)}
+.home.go-home{}
+main.go-home .home{animation:fadeIn .35s ease}
 </style>
 </head>
 <body>
@@ -422,7 +423,12 @@ function render(){
   document.getElementById("hTitle").textContent = {players:"選手登録", order:"オーダー", data:"データ"}[S.tab] || "";
   const app = document.getElementById("app");
   app.innerHTML = (home ? vHome() : ({players: vPlayers, order: vOrder, data: vData}[S.tab] || vOrder)()) + noticeHtml() + trHtml();
-  if (render.last !== S.tab){ app.classList.remove("enter"); void app.offsetWidth; app.classList.add("enter"); render.last = S.tab; }
+  if (render.last !== S.tab){
+    const cls = home ? "go-home" : "go-in", hdr = document.getElementById("hdr");
+    app.classList.remove("go-home","go-in"); hdr.classList.remove("go-in"); void app.offsetWidth;
+    if (render.last !== undefined || home){ app.classList.add(cls); if (!home) hdr.classList.add("go-in"); }
+    render.last = S.tab;
+  }
 }
 
 function playerOptions(sel, excludeIds){
@@ -447,14 +453,11 @@ function gameStatus(g){
   return validate(g).length ? `<span class="st">オーダー作成中</span>` : `<span class="st ok">オーダー完成</span>`;
 }
 function vHome(){
-  const games = [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||"") || 0);
-  const g = G() || games[0];
-  const np = sortedPlayers().length;
-  const others = games.filter(x => x.id !== g.id).slice(0, 3);
-  const first = np === 0;
+  const first = sortedPlayers().length === 0;
   return `<div class="home">
-    <svg class="hfield" viewBox="0 0 400 400" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
-      <path d="M200 380 L20 200 M200 380 L380 200"/><path d="M200 330 L300 230 L200 130 L100 230 Z"/><path d="M20 200 Q200 -40 380 200"/>
+    <div class="glow"></div>
+    <svg class="hfield" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <path d="M200 390 L10 200 M200 390 L390 200"/><path d="M200 330 L290 240 L200 150 L110 240 Z"/><path d="M10 200 Q200 -60 390 200"/>
     </svg>
     <div class="hero">
       <img src="icon-180.png" alt="" class="emb">
@@ -462,24 +465,14 @@ function vHome(){
       <div class="tgl">SOFTBALL LINEUP MANAGER</div>
       ${S.team ? `<div class="tm">${esc(S.team)}</div>` : ""}
     </div>
-    <div class="hbody">
-      ${first ? `<button class="onb" data-tab="players">
-          <span class="ic">${ICON.players}</span><span><b>はじめに選手を登録</b><small>背番号と名前を入れるとオーダーが組めます</small></span><span class="cv">${ICON.chev}</span></button>` : ""}
-      <button class="gm" data-act="openGame" data-id="${g.id}">
-        <span class="gl">${g.subs.length ? "試合中" : (g.date && g.date < today() ? "前回の試合" : "次の試合")}</span>
-        <span class="gd">${esc(fmtDate(g.date))}</span>
-        ${g.title ? `<span class="gt">${esc(g.title)}</span>` : ""}
-        <span class="go">${g.opp ? "vs " + esc(g.opp) : "対戦相手 未入力"}</span>
-        <span class="gf">${gameStatus(g)}<span class="gb">オーダーを開く ${ICON.chev}</span></span>
-      </button>
-      <button class="nw" data-act="homeNew">${ICON.plus}新しい試合をつくる</button>
-      ${others.length ? `<div class="rc"><div class="rh">最近の試合</div>
-        ${others.map(x => `<button class="ri" data-act="openGame" data-id="${x.id}"><span class="rd">${esc(fmtDate(x.date))}</span><span class="rt">${esc([x.title, x.opp ? "vs " + x.opp : ""].filter(Boolean).join(" ") || "（無題）")}</span>${ICON.chev}</button>`).join("")}
-      </div>` : ""}
-    </div>
-    <div class="sub">
-      <button data-tab="players">${ICON.players}<span>選手登録<small>${np}人・${S.year}年度</small></span></button>
-      <button data-tab="data">${ICON.data}<span>データ<small>${S.lastBackup ? "保存 " + esc(fmtDate(S.lastBackup)) : "バックアップ未"}</small></span></button>
+    <div class="acts">
+      ${first
+        ? `<button class="pri" data-tab="players"><span class="ic">${ICON.players}</span><span class="tx"><b>選手を登録する</b><small>まずはチームの選手を登録</small></span><span class="cv">${ICON.chev}</span></button>`
+        : `<button class="pri" data-tab="order"><span class="ic">${ICON.order}</span><span class="tx"><b>オーダー</b><small>スタメン作成・試合中の交代</small></span><span class="cv">${ICON.chev}</span></button>`}
+      <div class="sec">
+        ${first ? `<button data-tab="order">${ICON.order}オーダー</button>` : `<button data-tab="players">${ICON.players}選手登録</button>`}
+        <button data-tab="data">${ICON.data}データ</button>
+      </div>
     </div>
   </div>`;
 }
@@ -592,6 +585,7 @@ function vOrder(){
   return `
   <div class="gbar">
     <select data-act="pickGame">${[...S.games].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(gameTitle(x)||"（無題）")}</option>`).join("")}</select>
+    <button data-act="newGame2" aria-label="新しい試合" class="plus">＋</button>
     <button data-act="info">${infoOpen ? "閉じる" : "試合情報"}</button>
   </div>
   <div class="gbar">
@@ -1086,6 +1080,7 @@ document.addEventListener("click", ev => {
     pick = null;
   }
   else if (a === "noticeOk"){ notice = null; }
+  else if (a === "newGame2"){ const n = blankGame(); S.games.push(n); S.cur = n.id; S.mode = "edit"; infoOpen = true; pick = null; toast("新しい試合を作りました。試合情報を入力してください"); }
   else if (a === "homeNew"){ const n = blankGame(); S.games.push(n); S.cur = n.id; S.tab = "order"; S.mode = "edit"; infoOpen = true; toast("新しい試合を作りました"); }
   else if (a === "openGame"){ S.cur = b.dataset.id; S.tab = "order"; pick = null; window.scrollTo(0,0); }
   else if (a === "trOpen"){ const c = computeCurrent(g); tr = { next: 0, on: new Set() }; }
