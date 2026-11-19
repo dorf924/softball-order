@@ -368,7 +368,7 @@ function vPlayers(){
     <h2>${p ? "選手を編集" : "選手を登録"}</h2>
     <div class="row">
       <label style="flex:0 0 80px">背番号<input id="fNum" inputmode="numeric" value="${esc(p?.num)}"></label>
-      <label>名前<input id="fName" value="${esc(p?.name)}" placeholder="例：明星 太郎"></label>
+      <label>名前<input id="fName" value="${esc(p?.name)}" placeholder="例：山田 太郎"></label>
     </div>
     <div class="row">
       <label style="flex:0 0 80px">学年<select id="fGrade">${["","1","2","3"].map(x=>`<option ${p?.grade===x?"selected":""}>${x}</option>`).join("")}</select></label>
@@ -479,7 +479,7 @@ function vOrder(){
       <label>日付<input type="date" data-g="date" value="${esc(g.date)}"></label>
       <label>先攻/後攻<select data-g="side">${["先攻","後攻"].map(x=>`<option ${g.side===x?"selected":""}>${x}</option>`).join("")}</select></label>
     </div>
-    <label>大会名<input data-g="title" value="${esc(g.title)}" placeholder="例：近畿予選会"></label>
+    <label>大会名<input data-g="title" value="${esc(g.title)}" placeholder="例：○○大会"></label>
     <div class="row">
       <label>対戦相手<input data-g="opp" value="${esc(g.opp)}"></label>
       <label>球場<input data-g="place" value="${esc(g.place)}"></label>
@@ -797,7 +797,7 @@ function vData(){
   return `
   <section class="card">
     <h2>チーム名</h2>
-    <input id="teamName" value="${esc(S.team)}" placeholder="例：明星高校ソフトボール同好会">
+    <input id="teamName" value="${esc(S.team)}" placeholder="例：○○高校ソフトボール部">
     <div class="btns"><button class="btn s" data-act="saveTeam">保存</button></div>
   </section>
   <section class="card">
