@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f3a5f">
+<meta name="theme-color" content="#0f3328">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="DUGOUT">
 <link rel="manifest" href="manifest.json">
@@ -135,16 +136,83 @@ details.slog summary{font-size:14px;font-weight:bold;color:var(--main);padding:8
  section.card{border:0;padding:0;margin:0 0 10mm}
  @page{size:A4 portrait;margin:15mm}
 }
+
+/* ===== デザイン刷新 ===== */
+:root{--deep:#0f3328;--main:#1b4d3e;--gold:#c2a14e;--bg:#eef2ee}
+body{background:var(--bg);padding-bottom:calc(20px + env(safe-area-inset-bottom));-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 10px 9px;
+ background:linear-gradient(180deg,#14402f,var(--main));border-bottom:2px solid var(--gold);box-shadow:0 2px 10px rgba(15,51,40,.18)}
+header .hb{display:flex;align-items:center;gap:2px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;
+ border-radius:999px;padding:5px 12px 5px 6px;font-size:13px;font-weight:600}
+header .hb svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+header .ht{flex:1;color:#fff;font-size:17px;font-weight:700;letter-spacing:.04em}
+header .hw{color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.28em;font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif}
+body.is-home header{display:none}
+main{padding:10px 10px 0}
+main.enter{animation:fadeup .28s ease}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+section.card{border:0;border-radius:14px;box-shadow:0 1px 2px rgba(15,51,40,.06),0 6px 18px rgba(15,51,40,.07);padding:14px}
+h2{border-left:0;padding-left:0;display:flex;align-items:center;gap:8px;font-size:15px;color:var(--deep)}
+h2::before{content:"";width:4px;height:16px;border-radius:2px;background:linear-gradient(var(--gold),#a8822c)}
+.btn{border-radius:10px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.btn.w{box-shadow:none}
+input,select,textarea{border-radius:10px;border-color:#d3dbd4}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);box-shadow:0 0 0 3px rgba(27,77,62,.15)}
+.fld,.ls{border:0;border-radius:14px;box-shadow:0 1px 2px rgba(15,51,40,.06),0 6px 18px rgba(15,51,40,.07)}
+.gbar select,.gbar button{border-radius:10px}
+#toast{bottom:calc(28px + env(safe-area-inset-bottom));background:rgba(20,30,25,.92);border-radius:999px;padding:10px 18px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+
+/* ===== タイトル画面 ===== */
+body.is-home{background:var(--deep)}
+body.is-home main{padding:0;max-width:none}
+.home{position:relative;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+ background:radial-gradient(120% 70% at 50% 0%,#2c6e57 0%,#17463a 45%,var(--deep) 100%);color:#fff;
+ padding:calc(26px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
+.home .hfield{position:absolute;left:0;top:0;width:100%;height:62%;fill:none;stroke:rgba(255,255,255,.06);stroke-width:1.2;pointer-events:none}
+.hero{position:relative;text-align:center;padding:6px 0 20px;animation:fadeup .5s ease}
+.emb{width:84px;height:84px;border-radius:18px;box-shadow:0 10px 26px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.08)}
+.wm{margin-top:14px;font-family:"Avenir Next","Helvetica Neue",Arial,sans-serif;font-weight:800;font-size:38px;letter-spacing:.24em;padding-left:.24em;
+ color:#fbf7ea;text-shadow:0 2px 14px rgba(0,0,0,.35);line-height:1.1}
+.tgl{font-size:10px;letter-spacing:.38em;padding-left:.38em;color:var(--gold);font-weight:700;margin-top:6px}
+.tm{display:inline-block;margin-top:12px;font-size:13px;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15)}
+.hbody{position:relative;display:flex;flex-direction:column;gap:10px;animation:fadeup .55s ease .05s both}
+.home button{font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+.home svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.gm{position:relative;display:grid;grid-template-columns:1fr auto;text-align:left;border:0;border-radius:18px;padding:16px 18px 14px;color:#1d2a24;
+ background:linear-gradient(180deg,#fff,#f6f3e8);box-shadow:0 14px 34px rgba(0,0,0,.32),inset 0 0 0 1px rgba(194,161,78,.35)}
+.gm .gl{grid-column:1/3;font-size:11px;font-weight:800;letter-spacing:.2em;color:#9a7a2c}
+.gm .gd{grid-column:1/3;font-size:30px;font-weight:800;color:var(--deep);letter-spacing:.02em;line-height:1.25;margin-top:2px}
+.gm .gt{grid-column:1/3;font-size:14px;color:#55625b;margin-top:2px}
+.gm .go{grid-column:1/3;font-size:20px;font-weight:700;margin-top:2px}
+.gm .gf{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #e7e1cc}
+.gm .gb{display:flex;align-items:center;gap:2px;background:var(--main);color:#fff;font-weight:700;font-size:15px;padding:9px 10px 9px 16px;border-radius:999px;box-shadow:0 4px 12px rgba(27,77,62,.35)}
+.gm .gb svg{width:18px;height:18px;stroke-width:2.4}
+.st{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:#eceee9;color:#66706b}
+.st.ok{background:#e3f1e6;color:#1e7a45}.st.live{background:#fbe9e7;color:#b03a2e}
+.nw{display:flex;align-items:center;justify-content:center;gap:6px;border:1px dashed rgba(255,255,255,.35);background:rgba(255,255,255,.06);color:#fff;border-radius:14px;padding:12px;font-size:15px;font-weight:600}
+.nw svg{width:18px;height:18px;stroke-width:2.4}
+.rc{margin-top:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden}
+.rh{font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.55);padding:10px 14px 4px;font-weight:700}
+.ri{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:#fff;padding:10px 14px;text-align:left;border-top:1px solid rgba(255,255,255,.07)}
+.ri:first-of-type{border-top:0}
+.ri .rd{font-size:13px;color:var(--gold);font-weight:700;min-width:62px}.ri .rt{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri svg{width:16px;height:16px;opacity:.5}
+.onb{display:flex;align-items:center;gap:12px;text-align:left;border:0;border-radius:16px;padding:14px;background:linear-gradient(135deg,#e2c46e,#b8913a);color:#2a2410;box-shadow:0 10px 24px rgba(0,0,0,.3)}
+.onb .ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center}
+.onb .ic svg{width:24px;height:24px}
+.onb b{display:block;font-size:16px}.onb small{font-size:12px;opacity:.8}
+.onb .cv{margin-left:auto}.onb .cv svg{width:20px;height:20px}
+.sub{position:relative;margin-top:auto;padding-top:22px;display:flex;gap:10px;animation:fadeup .6s ease .1s both}
+.sub button{flex:1;display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:rgba(255,255,255,.85);
+ border-radius:12px;padding:10px 12px;text-align:left;font-size:14px;font-weight:600}
+.sub svg{width:22px;height:22px;color:var(--gold);flex:0 0 auto}
+.sub small{display:block;font-size:11px;font-weight:normal;color:rgba(255,255,255,.5);margin-top:1px}
+.home button:active{transform:scale(.98)}
 </style>
 </head>
 <body>
-<header><h1>DUGOUT<small>ソフトボール オーダー管理</small></h1><div class="g" id="hdrGame"></div></header>
+<header id="hdr"><button class="hb" data-tab="home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>ホーム</button><div class="ht" id="hTitle"></div><div class="hw">DUGOUT</div></header>
 <main id="app"></main>
-<nav>
- <button data-tab="players">選手</button>
- <button data-tab="order">オーダー</button>
- <button data-tab="data">データ</button>
-</nav>
 <div id="toast"></div>
 <input type="file" id="fileIn" style="display:none">
 
@@ -349,10 +417,12 @@ function noticeHtml(){
 /* ===== 描画 ===== */
 function render(){
   const g = G();
-  document.getElementById("hdrGame").textContent = (S.team ? S.team + "　" : "") + gameTitle(g);
-  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
+  const home = S.tab === "home";
+  document.body.classList.toggle("is-home", home);
+  document.getElementById("hTitle").textContent = {players:"選手登録", order:"オーダー", data:"データ"}[S.tab] || "";
   const app = document.getElementById("app");
-  app.innerHTML = ({players: vPlayers, order: vOrder, subs: vSubs, data: vData}[S.tab] || vPlayers)() + noticeHtml() + trHtml();
+  app.innerHTML = (home ? vHome() : ({players: vPlayers, order: vOrder, data: vData}[S.tab] || vOrder)()) + noticeHtml() + trHtml();
+  if (render.last !== S.tab){ app.classList.remove("enter"); void app.offsetWidth; app.classList.add("enter"); render.last = S.tab; }
 }
 
 function playerOptions(sel, excludeIds){
@@ -362,6 +432,56 @@ function playerOptions(sel, excludeIds){
 }
 function posOptions(list, sel){
   return `<option value="">—</option>` + list.map(k => `<option value="${k}" ${k===sel?"selected":""}>${posLabel(k)}</option>`).join("");
+}
+
+/* --- ホーム（タイトル画面） --- */
+const ICON = {
+  order: '<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM8.5 10.5h7M8.5 13.5h7M8.5 16.5h4.5"/></svg>',
+  players: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.9-4 3.9-6.2 7.5-6.2s6.6 2.2 7.5 6.2"/></svg>',
+  data: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8V6M5 12c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  chev: '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>'
+};
+function gameStatus(g){
+  if (g.subs.length) return `<span class="st live">試合中・交代${g.subs.length}件</span>`;
+  return validate(g).length ? `<span class="st">オーダー作成中</span>` : `<span class="st ok">オーダー完成</span>`;
+}
+function vHome(){
+  const games = [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||"") || 0);
+  const g = G() || games[0];
+  const np = sortedPlayers().length;
+  const others = games.filter(x => x.id !== g.id).slice(0, 3);
+  const first = np === 0;
+  return `<div class="home">
+    <svg class="hfield" viewBox="0 0 400 400" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+      <path d="M200 380 L20 200 M200 380 L380 200"/><path d="M200 330 L300 230 L200 130 L100 230 Z"/><path d="M20 200 Q200 -40 380 200"/>
+    </svg>
+    <div class="hero">
+      <img src="icon-180.png" alt="" class="emb">
+      <div class="wm">DUGOUT</div>
+      <div class="tgl">SOFTBALL LINEUP MANAGER</div>
+      ${S.team ? `<div class="tm">${esc(S.team)}</div>` : ""}
+    </div>
+    <div class="hbody">
+      ${first ? `<button class="onb" data-tab="players">
+          <span class="ic">${ICON.players}</span><span><b>はじめに選手を登録</b><small>背番号と名前を入れるとオーダーが組めます</small></span><span class="cv">${ICON.chev}</span></button>` : ""}
+      <button class="gm" data-act="openGame" data-id="${g.id}">
+        <span class="gl">${g.subs.length ? "試合中" : (g.date && g.date < today() ? "前回の試合" : "次の試合")}</span>
+        <span class="gd">${esc(fmtDate(g.date))}</span>
+        ${g.title ? `<span class="gt">${esc(g.title)}</span>` : ""}
+        <span class="go">${g.opp ? "vs " + esc(g.opp) : "対戦相手 未入力"}</span>
+        <span class="gf">${gameStatus(g)}<span class="gb">オーダーを開く ${ICON.chev}</span></span>
+      </button>
+      <button class="nw" data-act="homeNew">${ICON.plus}新しい試合をつくる</button>
+      ${others.length ? `<div class="rc"><div class="rh">最近の試合</div>
+        ${others.map(x => `<button class="ri" data-act="openGame" data-id="${x.id}"><span class="rd">${esc(fmtDate(x.date))}</span><span class="rt">${esc([x.title, x.opp ? "vs " + x.opp : ""].filter(Boolean).join(" ") || "（無題）")}</span>${ICON.chev}</button>`).join("")}
+      </div>` : ""}
+    </div>
+    <div class="sub">
+      <button data-tab="players">${ICON.players}<span>選手登録<small>${np}人・${S.year}年度</small></span></button>
+      <button data-tab="data">${ICON.data}<span>データ<small>${S.lastBackup ? "保存 " + esc(fmtDate(S.lastBackup)) : "バックアップ未"}</small></span></button>
+    </div>
+  </div>`;
 }
 
 /* --- 選手 --- */
@@ -966,6 +1086,8 @@ document.addEventListener("click", ev => {
     pick = null;
   }
   else if (a === "noticeOk"){ notice = null; }
+  else if (a === "homeNew"){ const n = blankGame(); S.games.push(n); S.cur = n.id; S.tab = "order"; S.mode = "edit"; infoOpen = true; toast("新しい試合を作りました"); }
+  else if (a === "openGame"){ S.cur = b.dataset.id; S.tab = "order"; pick = null; window.scrollTo(0,0); }
   else if (a === "trOpen"){ const c = computeCurrent(g); tr = { next: 0, on: new Set() }; }
   else if (a === "trClose"){ tr = null; }
   else if (a === "trNext"){ tr.next = Number(b.dataset.i); tr.on.delete(tr.next); }
@@ -1045,7 +1167,7 @@ document.addEventListener("click", ev => {
   else if (a === "saveTeam"){ S.team = document.getElementById("teamName").value.trim(); toast("保存しました"); }
   else if (a === "export"){ exportData(); return; }
   else if (a === "import"){ document.getElementById("fileIn").click(); return; }
-  else if (a === "copyAll"){ copyText(JSON.stringify(S)); return; }
+  else if (a === "copyAll"){ S.lastBackup = today(); save(); copyText(JSON.stringify(S)); return; }
   else if (a === "pasteImport"){ const t = document.getElementById("pasteBox").value; if (!t.trim()) { toast("先に貼り付けてください"); return; } importText(t); return; }
   else if (a === "wipe"){
     if (!confirm("すべてのデータを削除します。元に戻せません。よろしいですか？")) return;
@@ -1095,6 +1217,7 @@ function fallbackCopy(text){
   ta.remove();
 }
 function exportData(){
+  S.lastBackup = today(); save();
   const blob = new Blob([JSON.stringify(S, null, 1)], {type: "application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -1124,7 +1247,7 @@ document.getElementById("fileIn").addEventListener("change", ev => {
   r.readAsText(f); ev.target.value = "";
 });
 /* ===== 起動 ===== */
-load(); render();
+load(); S.tab = "home"; render();
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
