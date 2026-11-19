@@ -162,6 +162,48 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .gbar select,.gbar button{border-radius:10px}
 #toast{bottom:calc(28px + env(safe-area-inset-bottom));background:rgba(20,30,25,.92);border-radius:999px;padding:10px 18px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 
+/* ===== 試合履歴 ===== */
+.st{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eceee9;color:#66706b;white-space:nowrap}
+.st.ok{background:#e3f1e6;color:#1e7a45}.st.live{background:#fbe9e7;color:#b03a2e}
+.gsel{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #d3dbd4;border-radius:10px;padding:0 10px;height:34px;font-size:14px;color:#222;font-weight:600}
+.gsel span{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsel svg{width:16px;height:16px;fill:none;stroke:var(--main);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.gtool{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.gtool .gcount{flex:1;text-align:center;font-size:13px;color:#667}
+.gtool .btn,.gac .btn{display:inline-flex;align-items:center;gap:4px}
+.gtool svg,.gac svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn:disabled{opacity:.4}
+.gclean{width:100%;border:1px dashed #c9b27a;background:#fbf7ea;color:#7a6224;border-radius:12px;padding:10px;font-size:13px;font-weight:600;margin-bottom:10px}
+.gmh{font-size:12px;font-weight:800;color:#7a8a80;letter-spacing:.08em;margin:14px 4px 6px}
+.gmh:first-child{margin-top:2px}
+.gi{background:#fff;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,51,40,.06),0 4px 14px rgba(15,51,40,.06);overflow:hidden;cursor:pointer;
+ border:1.5px solid transparent;transition:border-color .15s}
+.gi.cur{border-color:rgba(194,161,78,.55)}
+.gi.chk{border-color:var(--err);background:#fff6f5}
+.gtop{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.gdate{flex:0 0 46px;height:50px;border-radius:12px;background:linear-gradient(160deg,#245e4b,#123d30);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.gdate b{font-size:20px}.gdate small{font-size:10px;color:#e6d39b}
+.gmain{flex:1;min-width:0}
+.gname{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gsub{font-size:12px;color:#7a837e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.gi .st{flex:0 0 auto}
+.nowtag{position:absolute;opacity:0}
+.gi.cur .gtop{position:relative}
+.gi.cur .gtop::after{content:"表示中";position:absolute;top:4px;right:10px;font-size:9px;color:#a8822c;font-weight:800;letter-spacing:.1em}
+.cb{flex:0 0 22px;height:22px;border-radius:50%;border:2px solid #c8cfca}
+.gi.chk .cb{border-color:var(--err);background:var(--err);box-shadow:inset 0 0 0 3px #fff}
+.glu{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;padding:4px 16px 10px 16px;border-top:1px solid #eef1ee;font-size:14px;animation:fadeIn .25s ease}
+.glu div{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px dotted #e6ebe7}
+.glu b{width:22px;color:var(--main)}
+.glu .gp{width:28px;font-size:12px;font-weight:700;color:#8a6d1c}
+.gac{display:flex;gap:8px;justify-content:space-between;padding:4px 14px 14px}
+#snack{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,140%);display:flex;align-items:center;gap:14px;
+ background:#1d2b25;color:#fff;border-radius:14px;padding:10px 10px 10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:30;
+ transition:transform .3s cubic-bezier(.2,.85,.25,1);white-space:nowrap}
+#snack.on{transform:translate(-50%,0)}
+#snack button{border:0;background:var(--gold);color:#1d2b25;font-weight:800;border-radius:10px;padding:7px 12px;font-size:13px}
+.home .sec button{padding:13px 6px;font-size:13px;gap:6px}
+
 /* ===== 画面切り替え ===== */
 main.go-in{animation:slideIn .42s cubic-bezier(.2,.85,.25,1)}
 header.go-in{animation:fadeIn .3s ease}
@@ -215,6 +257,7 @@ main.go-home .home{animation:fadeIn .35s ease}
 <header id="hdr"><button class="hb" data-tab="home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>ホーム</button><div class="ht" id="hTitle"></div><div class="hw">DUGOUT</div></header>
 <main id="app"></main>
 <div id="toast"></div>
+<div id="snack"><span id="snackTx"></span><button data-act="undoDel">元に戻す</button></div>
 <input type="file" id="fileIn" style="display:none">
 
 <script>
@@ -420,9 +463,9 @@ function render(){
   const g = G();
   const home = S.tab === "home";
   document.body.classList.toggle("is-home", home);
-  document.getElementById("hTitle").textContent = {players:"選手登録", order:"オーダー", data:"データ"}[S.tab] || "";
+  document.getElementById("hTitle").textContent = {players:"選手登録", order:"オーダー", data:"データ", games:"試合履歴"}[S.tab] || "";
   const app = document.getElementById("app");
-  app.innerHTML = (home ? vHome() : ({players: vPlayers, order: vOrder, data: vData}[S.tab] || vOrder)()) + noticeHtml() + trHtml();
+  app.innerHTML = (home ? vHome() : ({players: vPlayers, order: vOrder, data: vData, games: vGames}[S.tab] || vOrder)()) + noticeHtml() + trHtml();
   if (render.last !== S.tab){
     const cls = home ? "go-home" : "go-in", hdr = document.getElementById("hdr");
     app.classList.remove("go-home","go-in"); hdr.classList.remove("go-in"); void app.offsetWidth;
@@ -445,6 +488,8 @@ const ICON = {
   order: '<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM8.5 10.5h7M8.5 13.5h7M8.5 16.5h4.5"/></svg>',
   players: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c.9-4 3.9-6.2 7.5-6.2s6.6 2.2 7.5 6.2"/></svg>',
   data: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8V6M5 12c0 1.6 3.1 2.8 7 2.8s7-1.2 7-2.8"/></svg>',
+  hist: '<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4.5l3 2"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>'
 };
@@ -471,10 +516,56 @@ function vHome(){
         : `<button class="pri" data-tab="order"><span class="ic">${ICON.order}</span><span class="tx"><b>オーダー</b><small>スタメン作成・試合中の交代</small></span><span class="cv">${ICON.chev}</span></button>`}
       <div class="sec">
         ${first ? `<button data-tab="order">${ICON.order}オーダー</button>` : `<button data-tab="players">${ICON.players}選手登録</button>`}
+        <button data-tab="games">${ICON.hist}試合履歴</button>
         <button data-tab="data">${ICON.data}データ</button>
       </div>
     </div>
   </div>`;
+}
+
+/* --- 試合履歴 --- */
+let gOpen = null, gSel = null;   // 開いている試合 / 選択削除モードの選択
+function isEmptyGame(x){ return !x.title && !x.opp && !x.place && !x.subs.length && !x.lineup.some(s => s.pid) && !(x.flex && x.flex.pid); }
+function vGames(){
+  const list = [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||""));
+  const empties = list.filter(isEmptyGame).length;
+  const selMode = !!gSel;
+  let lastYm = "";
+  const rows = list.map(x => {
+    const ym = (x.date || "").slice(0,7), head = ym !== lastYm ? `<div class="gmh">${ym ? Number(ym.slice(0,4)) + "年" + Number(ym.slice(5)) + "月" : "日付なし"}</div>` : "";
+    lastYm = ym;
+    const open = gOpen === x.id && !selMode, cur = x.id === S.cur;
+    const st = x.subs.length ? `<span class="st live">交代${x.subs.length}件</span>` : (validate(x).length ? (isEmptyGame(x) ? `<span class="st">空</span>` : `<span class="st">作成中</span>`) : `<span class="st ok">完成</span>`);
+    const lineup = open ? `<div class="glu">${x.lineup.map((s,i) => `<div><b>${i+1}</b><span class="gp">${s.pos ? (s.pos === "DP" ? "DP" : esc(POS[s.pos])) : "—"}</span>${esc(pname(s.pid) || "—")}</div>`).join("")}
+        ${x.useDP ? `<div><b>FP</b><span class="gp">${x.flex.pos ? esc(POS[x.flex.pos]) : "—"}</span>${esc(pname(x.flex.pid) || "—")}</div>` : ""}</div>
+      <div class="gac"><button class="btn s" data-act="openGame" data-id="${x.id}">このオーダーを開く</button>
+        <button class="btn r s" data-act="delOne" data-id="${x.id}">${ICON.trash}削除</button></div>` : "";
+    return head + `<div class="gi${open ? " open" : ""}${cur ? " cur" : ""}${selMode && gSel.has(x.id) ? " chk" : ""}" data-act="${selMode ? "gToggle" : "gExpand"}" data-id="${x.id}">
+      <div class="gtop">${selMode ? `<span class="cb"></span>` : ""}
+        <div class="gdate"><b>${x.date ? Number(x.date.slice(8)) : "—"}</b><small>${x.date ? "日月火水木金土"[new Date(x.date).getDay()] : ""}</small></div>
+        <div class="gmain"><div class="gname">${x.opp ? "vs " + esc(x.opp) : `<span class="muted">対戦相手なし</span>`}</div>
+          <div class="gsub">${esc([x.title, x.place, x.side].filter(Boolean).join("・"))}</div></div>
+        ${st}${cur ? `<span class="nowtag">表示中</span>` : ""}</div>
+      ${lineup}</div>`;
+  }).join("");
+  return `
+  <div class="gtool">
+    ${selMode
+      ? `<button class="btn w s" data-act="gSelCancel">キャンセル</button><span class="gcount">${gSel.size}件選択</span><button class="btn r s" data-act="gDelSel" ${gSel.size ? "" : "disabled"}>${ICON.trash}削除</button>`
+      : `<button class="btn s" data-act="homeNew">${ICON.plus}新しい試合</button><span class="gcount">${list.length}試合</span><button class="btn w s" data-act="gSelStart">選んで削除</button>`}
+  </div>
+  ${empties && !selMode && list.length > 1 ? `<button class="gclean" data-act="gDelEmpty">中身が空の試合 ${empties}件をまとめて削除</button>` : ""}
+  <div class="glist">${rows}</div>`;
+}
+let delBak = null;
+function deleteGames(ids){
+  delBak = { games: JSON.parse(JSON.stringify(S.games)), cur: S.cur };
+  S.games = S.games.filter(x => !ids.includes(x.id));
+  if (!S.games.length) S.games.push(blankGame());
+  if (!S.games.find(x => x.id === S.cur)) S.cur = [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||""))[0].id;
+  const sn = document.getElementById("snack");
+  document.getElementById("snackTx").textContent = `${ids.length}試合を削除しました`;
+  sn.classList.add("on"); clearTimeout(deleteGames.t); deleteGames.t = setTimeout(() => { sn.classList.remove("on"); delBak = null; }, 7000);
 }
 
 /* --- 選手 --- */
@@ -584,7 +675,7 @@ function vOrder(){
   const lastB = g.subs.length;
   return `
   <div class="gbar">
-    <select data-act="pickGame">${[...S.games].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(gameTitle(x)||"（無題）")}</option>`).join("")}</select>
+    <button class="gsel" data-tab="games"><span>${esc(gameTitle(g) || "（無題の試合）")}</span><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
     <button data-act="newGame2" aria-label="新しい試合" class="plus">＋</button>
     <button data-act="info">${infoOpen ? "閉じる" : "試合情報"}</button>
   </div>
@@ -1050,7 +1141,7 @@ function vData(){
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-tab],[data-act]");
   if (!b || b.tagName === "SELECT" || b.type === "checkbox") return;
-  if (b.dataset.tab){ S.tab = b.dataset.tab; editId = ""; pick = null; save(); render(); window.scrollTo(0,0); return; }
+  if (b.dataset.tab){ S.tab = b.dataset.tab; editId = ""; pick = null; gSel = null; gOpen = b.dataset.tab === "games" ? S.cur : gOpen; save(); render(); window.scrollTo(0,0); return; }
   const g = G(), a = b.dataset.act;
   if (a === "savePlayer"){
     const name = document.getElementById("fName").value.trim();
@@ -1080,6 +1171,14 @@ document.addEventListener("click", ev => {
     pick = null;
   }
   else if (a === "noticeOk"){ notice = null; }
+  else if (a === "gExpand"){ if (ev.target.closest("button")) return; gOpen = gOpen === b.dataset.id ? null : b.dataset.id; render(); return; }
+  else if (a === "gToggle"){ const id = b.dataset.id; gSel.has(id) ? gSel.delete(id) : gSel.add(id); render(); return; }
+  else if (a === "gSelStart"){ gSel = new Set(); gOpen = null; render(); return; }
+  else if (a === "gSelCancel"){ gSel = null; render(); return; }
+  else if (a === "gDelSel"){ if (!gSel.size) return; deleteGames([...gSel]); gSel = null; }
+  else if (a === "delOne"){ const x = S.games.find(y => y.id === b.dataset.id); if (!confirm(`「${gameTitle(x) || "無題の試合"}」を削除しますか？`)) return; deleteGames([x.id]); gOpen = null; }
+  else if (a === "gDelEmpty"){ deleteGames(S.games.filter(isEmptyGame).map(x => x.id)); }
+  else if (a === "undoDel"){ if (!delBak) return; S.games = delBak.games; S.cur = delBak.cur; delBak = null; document.getElementById("snack").classList.remove("on"); toast("元に戻しました"); }
   else if (a === "newGame2"){ const n = blankGame(); S.games.push(n); S.cur = n.id; S.mode = "edit"; infoOpen = true; pick = null; toast("新しい試合を作りました。試合情報を入力してください"); }
   else if (a === "homeNew"){ const n = blankGame(); S.games.push(n); S.cur = n.id; S.tab = "order"; S.mode = "edit"; infoOpen = true; toast("新しい試合を作りました"); }
   else if (a === "openGame"){ S.cur = b.dataset.id; S.tab = "order"; pick = null; window.scrollTo(0,0); }
