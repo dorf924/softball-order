@@ -205,6 +205,28 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .home .sec button{flex-direction:column;padding:10px 4px 9px;font-size:12px;gap:4px;white-space:nowrap}
 .home .sec svg{width:21px;height:21px}
 
+/* ===== チームロゴ ===== */
+.home .emb.lg,.bprev .emb.lg{display:flex;align-items:center;justify-content:center;overflow:hidden}
+.home .emb.lg img{width:76%;height:76%;object-fit:contain}
+.emb.lgreen{background:radial-gradient(circle at 50% 35%,#2a6b55,#0f3328)}
+.emb.lw{background:#fff}
+.home .wm2{display:flex;flex-direction:column;align-items:center;gap:6px}
+.home .wm2 .bn{letter-spacing:.16em;padding-left:.16em;color:#fbf7ea;line-height:1.05;white-space:nowrap}
+.home .wm2 .du{font-size:20px;letter-spacing:.5em;padding-left:.5em;color:var(--gold)}
+.home .hedit{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:2;width:38px;height:38px;border-radius:50%;
+ border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;padding:0}
+.home .hedit svg{width:18px;height:18px}
+.bprev{border-radius:14px;overflow:hidden;margin-bottom:12px}
+.home.mini{min-height:0;height:auto;padding:22px 10px 20px;align-items:center;text-align:center;justify-content:center}
+.home.mini .emb{width:72px;height:72px;border-radius:17px;animation:none}
+.home.mini .wm{margin-top:12px;font-size:30px;animation:none}
+.home.mini .wm2 .du{font-size:15px}
+.home.mini .tgl,.home.mini .tm{animation:none}
+.home.mini .tm{margin-top:10px}
+.seg2{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;color:#555}
+.seg2 button{border:1px solid var(--main);background:#fff;color:var(--main);border-radius:999px;padding:5px 14px;font-size:13px}
+.seg2 button.on{background:var(--main);color:#fff}
+
 /* ===== 画面切り替え ===== */
 main.go-in{animation:slideIn .42s cubic-bezier(.2,.85,.25,1)}
 header.go-in{animation:fadeIn .3s ease}
@@ -259,11 +281,12 @@ main.go-home .home{animation:fadeIn .35s ease}
 </style>
 </head>
 <body>
-<header id="hdr"><button class="hb" data-tab="home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>ホーム</button><div class="ht" id="hTitle"></div><div class="hw">DUGOUT</div></header>
+<header id="hdr"><button class="hb" data-tab="home"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>ホーム</button><div class="ht" id="hTitle"></div><div class="hw" id="hWord">DUGOUT</div></header>
 <main id="app"></main>
 <div id="toast"></div>
 <div id="snack"><span id="snackTx"></span><button data-act="undoDel">元に戻す</button></div>
 <input type="file" id="fileIn" style="display:none">
+<input type="file" id="logoIn" accept="image/*" style="display:none">
 
 <script>
 "use strict";
@@ -468,6 +491,7 @@ function render(){
   const g = G();
   const home = S.tab === "home";
   document.body.classList.toggle("is-home", home);
+  document.getElementById("hWord").textContent = (brand().name ? brand().name + " " : "") + "DUGOUT";
   document.getElementById("hTitle").textContent = {players:"選手登録", order:"オーダー", data:"データ", games:"試合履歴"}[S.tab] || "";
   const app = document.getElementById("app");
   app.innerHTML = (home ? vHome() : ({players: vPlayers, order: vOrder, data: vData, games: vGames}[S.tab] || vOrder)()) + noticeHtml() + trHtml();
@@ -486,6 +510,40 @@ function playerOptions(sel, excludeIds){
 }
 function posOptions(list, sel){
   return `<option value="">—</option>` + list.map(k => `<option value="${k}" ${k===sel?"selected":""}>${posLabel(k)}</option>`).join("");
+}
+
+/* --- チームのブランド（ロゴ・略称） --- */
+function brand(){ return S.brand || (S.brand = { name: "", logo: "", bg: "green" }); }
+let brandImg = null;
+function loadBrandImg(){ const b = brand(); brandImg = null; if (b.logo){ brandImg = new Image(); brandImg.src = b.logo; } }
+function emblemHtml(cls){
+  const b = brand();
+  if (!b.logo) return `<img src="icon-180.png" alt="" class="${cls}">`;
+  return `<span class="${cls} lg ${b.bg === "white" ? "lw" : "lgreen"}"><img src="${b.logo}" alt=""></span>`;
+}
+function wordmarkHtml(){
+  const n = (brand().name || "").trim();
+  if (!n) return `<div class="wm">DUGOUT</div>`;
+  const w = [...n].reduce((a,c) => a + (/[ -~]/.test(c) ? 1 : 1.7), 0);   // 全角は幅広
+  const fs = Math.max(20, Math.min(42, Math.floor(300 / (w * 1.22))));
+  return `<div class="wm wm2"><span class="bn" style="font-size:${fs}px">${esc(n)}</span><span class="du">DUGOUT</span></div>`;
+}
+/* ロゴからホーム画面用アイコンを作る（iPhoneのSafariで追加するとき用） */
+function brandIcon(size){
+  const b = brand(); if (!b.logo || !brandImg || !brandImg.complete || !brandImg.naturalWidth) return null;
+  const c = document.createElement("canvas"); c.width = c.height = size; const x = c.getContext("2d");
+  if (b.bg === "white"){ x.fillStyle = "#fff"; x.fillRect(0,0,size,size); }
+  else { const gr = x.createRadialGradient(size/2, size*.35, 0, size/2, size/2, size*.75); gr.addColorStop(0,"#2a6b55"); gr.addColorStop(1,"#0f3328"); x.fillStyle = gr; x.fillRect(0,0,size,size); }
+  const pad = size * .14, box = size - pad*2, r = Math.min(box / brandImg.naturalWidth, box / brandImg.naturalHeight);
+  const w = brandImg.naturalWidth * r, h = brandImg.naturalHeight * r;
+  x.drawImage(brandImg, (size-w)/2, (size-h)/2, w, h);
+  return c.toDataURL("image/png");
+}
+function applyBrandIcon(){
+  const l = document.querySelector('link[rel="apple-touch-icon"]');
+  const d = brandIcon(180);
+  l.href = d || "icon-180.png";
+  document.title = (brand().name ? brand().name + " " : "") + "DUGOUT｜ソフトボール オーダー管理";
 }
 
 /* --- ホーム（タイトル画面） --- */
@@ -509,9 +567,10 @@ function vHome(){
     <svg class="hfield" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <path d="M200 390 L10 200 M200 390 L390 200"/><path d="M200 330 L290 240 L200 150 L110 240 Z"/><path d="M10 200 Q200 -60 390 200"/>
     </svg>
+    <button class="hedit" data-act="toBrand" aria-label="ホーム画面を編集"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/></svg></button>
     <div class="hero">
-      <img src="icon-180.png" alt="" class="emb">
-      <div class="wm">DUGOUT</div>
+      ${emblemHtml("emb")}
+      ${wordmarkHtml()}
       <div class="tgl">SOFTBALL LINEUP MANAGER</div>
       ${S.team ? `<div class="tm">${esc(S.team)}</div>` : ""}
     </div>
@@ -996,6 +1055,11 @@ function drawSheet(){
   const txt = (t, px, py, size, opt = {}) => { x.font = `${opt.bold ? "bold " : ""}${size}px ${F}`; x.fillStyle = opt.color || "#222"; x.textAlign = opt.align || "left"; x.fillText(t, px, py, opt.max || 2000); };
   // 見出し
   let y = 120;
+  if (brandImg && brandImg.complete && brandImg.naturalWidth){
+    x.font = `bold 52px ${F}`; const tw0 = Math.min(x.measureText(S.team || "メンバー表").width, 900), ls = 76;
+    const r = Math.min(ls / brandImg.naturalWidth, ls / brandImg.naturalHeight), iw = brandImg.naturalWidth * r, ih = brandImg.naturalHeight * r;
+    x.drawImage(brandImg, W/2 - tw0/2 - 24 - iw, y - ih/2, iw, ih);
+  }
   txt(S.team || "メンバー表", W/2, y, 52, {bold:true, align:"center"});
   y += 62;
   txt([gameTitle(g), g.place, g.side].filter(Boolean).join("　") + (b.live ? "　（交代後・現在）" : ""), W/2, y, 28, {align:"center", color:"#444"});
@@ -1115,10 +1179,23 @@ function exportPdf(){
 /* --- データ --- */
 function vData(){
   return `
-  <section class="card">
-    <h2>チーム名</h2>
-    <input id="teamName" value="${esc(S.team)}" placeholder="例：○○高校ソフトボール部">
-    <div class="btns"><button class="btn s" data-act="saveTeam">保存</button></div>
+  <section class="card" id="brandCard">
+    <h2>チーム設定（ホーム画面）</h2>
+    <div class="bprev">
+      <div class="home mini">${emblemHtml("emb")}${wordmarkHtml()}<div class="tgl">SOFTBALL LINEUP MANAGER</div>${S.team ? `<div class="tm">${esc(S.team)}</div>` : ""}</div>
+    </div>
+    <label>ロゴの文字（略称・英字がおすすめ）<input id="brandName" value="${esc(brand().name)}" placeholder="例：MEISEI" maxlength="12"></label>
+    <label>チーム名（メンバー表・PDFに出ます）<input id="teamName" value="${esc(S.team)}" placeholder="例：○○高校ソフトボール部"></label>
+    <label>ロゴ画像</label>
+    <div class="btns" style="margin-top:0">
+      <button class="btn w s" data-act="pickLogo">${brand().logo ? "画像を変更" : "画像を選ぶ"}</button>
+      ${brand().logo ? `<button class="btn r s" data-act="delLogo">画像を外す</button>` : ""}
+    </div>
+    ${brand().logo ? `<div class="seg2"><span>背景</span>
+      <button data-act="logoBg" data-v="green" class="${brand().bg !== "white" ? "on" : ""}">緑</button>
+      <button data-act="logoBg" data-v="white" class="${brand().bg === "white" ? "on" : ""}">白</button></div>` : ""}
+    <div class="btns"><button class="btn s" data-act="saveTeam">文字を保存</button></div>
+    <p class="muted" style="margin:10px 0 0">正方形で、背景が透明か白のロゴ画像がきれいに出ます。</p>
   </section>
   <section class="card">
     <h2>バックアップ</h2>
@@ -1263,7 +1340,11 @@ document.addEventListener("click", ev => {
   else if (a === "delSub"){ if (!confirm("この交代を取り消しますか？")) return; g.subs.splice(Number(b.dataset.i), 1); }
   else if (a === "copyText"){ copyText(sheetText()); return; }
   else if (a === "pdf"){ if (!isLive() && validate(g).length && !confirm("オーダーに未入力・重複があります。このままPDFにしますか？")) return; exportPdf(); return; }
-  else if (a === "saveTeam"){ S.team = document.getElementById("teamName").value.trim(); toast("保存しました"); }
+  else if (a === "saveTeam"){ S.team = document.getElementById("teamName").value.trim(); brand().name = document.getElementById("brandName").value.trim(); toast("保存しました"); }
+  else if (a === "toBrand"){ S.tab = "data"; save(); render(); setTimeout(() => document.getElementById("brandCard")?.scrollIntoView({behavior:"smooth"}), 50); return; }
+  else if (a === "pickLogo"){ document.getElementById("logoIn").click(); return; }
+  else if (a === "delLogo"){ if (!confirm("ロゴ画像を外しますか？")) return; brand().logo = ""; loadBrandImg(); applyBrandIcon(); }
+  else if (a === "logoBg"){ brand().bg = b.dataset.v; setTimeout(applyBrandIcon, 50); }
   else if (a === "export"){ exportData(); return; }
   else if (a === "import"){ document.getElementById("fileIn").click(); return; }
   else if (a === "copyAll"){ S.lastBackup = today(); save(); copyText(JSON.stringify(S)); return; }
@@ -1335,7 +1416,7 @@ function importText(text){
   } catch(e){ toast("このデータは読み込めません"); return false; }
   const n = d.players.filter(p => !p.grad).length;
   if (!confirm(`選手${n}人・試合${d.games.length}件のデータを読み込みます。\n今このアプリに入っているデータは置き換わります。よろしいですか？`)) return false;
-  S = d; normalize(); S.tab = "players"; save(); render(); toast("読み込みました");
+  S = d; normalize(); S.tab = "players"; loadBrandImg(); if (brandImg) brandImg.onload = applyBrandIcon; save(); render(); toast("読み込みました");
   return true;
 }
 document.getElementById("fileIn").addEventListener("change", ev => {
@@ -1345,8 +1426,22 @@ document.getElementById("fileIn").addEventListener("change", ev => {
   r.onerror = () => toast("ファイルを開けませんでした");
   r.readAsText(f); ev.target.value = "";
 });
+document.getElementById("logoIn").addEventListener("change", ev => {
+  const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => {
+    const M = 400, r = Math.min(1, M / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * r); c.height = Math.round(im.naturalHeight * r);
+    c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    brand().logo = c.toDataURL("image/png"); URL.revokeObjectURL(url);
+    loadBrandImg(); brandImg.onload = applyBrandIcon;
+    save(); render(); toast("ロゴを設定しました");
+  };
+  im.onerror = () => toast("この画像は読み込めません");
+  im.src = url;
+});
 /* ===== 起動 ===== */
-load(); S.tab = "home"; render();
+load(); S.tab = "home"; loadBrandImg(); if (brandImg) brandImg.onload = applyBrandIcon; else applyBrandIcon(); render();
 if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
