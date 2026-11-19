@@ -88,6 +88,10 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ghost{position:fixed;z-index:50;pointer-events:none;background:#fff;border:2px solid var(--gold);border-radius:6px;padding:4px 10px;font-weight:bold;
  box-shadow:0 4px 12px rgba(0,0,0,.25);transform:translate(-50%,-130%);font-size:15px;white-space:nowrap}
 .hint{font-size:11px;color:#777;margin:6px 2px 0;line-height:1.5}
+.pbox.dpb{border-style:dashed;border-color:var(--gold)}
+.fpt{display:inline-block;margin-left:3px;background:var(--gold);color:#fff;border-radius:3px;padding:0 3px;font-size:8px;vertical-align:1px}
+.gbar .dpbtn{font-size:12px;padding:0 8px}
+.gbar .dpbtn.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:bold}
 .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
 .bchip{position:relative;background:var(--box);border:1px solid var(--boxl);border-radius:4px;height:32px;display:flex;align-items:center;justify-content:center;
  font-size:15px;font-weight:bold;white-space:nowrap;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -223,6 +227,13 @@ function computeCurrent(g){
     let note = "";
     if (!tgt){ warns.push(lb + "：対象の打順がありません"); evNotes.push(""); return; }
     if (e.kind === "守備位置変更"){ tgt.pos = e.pos || ""; evNotes.push(""); return; }
+    if (e.kind === "FP打撃" && flex){
+      if (tgt.pid) out.add(tgt.pid);
+      tgt.pid = flex.pid; tgt.pos = flex.pos; flex.pid = ""; flex.pos = ""; evNotes.push("DP/FP解除"); return;
+    }
+    if (e.kind === "DP守備" && flex){
+      tgt.pos = e.pos; if (flex.pid) out.add(flex.pid); flex.pid = ""; flex.pos = ""; evNotes.push("DP/FP解除"); return;
+    }
     const inP = e.pid, prev = tgt.pid;
     if (!inP){ evNotes.push(""); return; }
     const inGame = slots.some(s => s.pid === inP) || (flex && flex.pid === inP);
@@ -304,11 +315,14 @@ function fieldHtml(slots, flex, live){
   const at = {};
   slots.concat(flex ? [flex] : []).forEach(s => { if (/^\d$/.test(s.pos) && s.pid) at[s.pos] = s.pid; });
   const dp = slots.find(s => s.pos === "DP" && s.pid);
-  const boxes = Object.keys(FXY).map(k => {
-    const [x,y] = FXY[k], id = at[k], p = P(id);
-    const cls = "pbox" + (p ? "" : " empty") + (live && pick && pick.t==="pos" && pick.v===k ? " sel" : "");
+  const keys = Object.keys(FXY).concat(flex ? ["DP"] : []);
+  if (dp) at["DP"] = dp.pid;
+  const boxes = keys.map(k => {
+    const [x,y] = k === "DP" ? [17,178] : FXY[k], id = at[k], p = P(id);
+    const fp = flex && flex.pid && flex.pid === id && k !== "DP";
+    const cls = "pbox" + (k === "DP" ? " dpb" : "") + (p ? "" : " empty") + (live && pick && pick.t==="pos" && pick.v===k ? " sel" : "");
     return `<div class="${cls}" ${live?`data-dt="pos" data-dv="${k}"`:""} style="left:${x}%;top:${y}px">
-      <div class="pl">${POS_FULL[k]}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
+      <div class="pl">${k === "DP" ? "DP（指名選手）" : POS_FULL[k]}${fp ? `<span class="fpt">FP</span>` : ""}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
   }).join("");
   return `<div class="fld">
     <svg viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
@@ -317,7 +331,6 @@ function fieldHtml(slots, flex, live){
       <path d="M50 186 L80 130 L50 74 L20 130 Z" fill="#e6efe2" stroke="#9fb89a" stroke-width="1" vector-effect="non-scaling-stroke"/>
     </svg>
     ${boxes}
-    ${dp ? `<div class="dpnote">DP：${esc(pname(dp.pid))}</div>` : ""}
   </div>`;
 }
 /* 画面に出すオーダー（スタメン編集＝登録オーダー、試合中＝交代反映後） */
@@ -351,6 +364,7 @@ function vOrder(){
   </div>
   <div class="gbar">
     <div class="seg"><button data-act="mode2" data-m="edit" class="${live?"":"on"}">スタメン編集</button><button data-act="mode2" data-m="game" class="${live?"on":""}">試合中</button></div>
+    ${live ? "" : `<button data-act="dpToggle" class="dpbtn${g.useDP?" on":""}">DP/FP ${g.useDP?"オン":"オフ"}</button>`}
     ${live ? `<div class="inn"><button data-act="inn" data-d="-1">−</button><b>${g.inn||1}回</b><button data-act="inn" data-d="1">＋</button></div>` : ""}
     <button data-act="undo" ${(live ? lastB : undoStack.some(u=>u.gid===g.id)) ? "" : "disabled"}>↶戻す</button>
   </div>
@@ -364,10 +378,6 @@ function vOrder(){
       <label>対戦相手<input data-g="opp" value="${esc(g.opp)}"></label>
       <label>球場<input data-g="place" value="${esc(g.place)}"></label>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:#222"><input type="checkbox" data-act="toggleDP" style="width:auto" ${g.useDP?"checked":""}> DP/FLEXを使う</label>
-    <div class="row" style="margin-bottom:8px">
-      <label>DPにする打順<select data-act="setDP"><option value="">—</option>${g.lineup.map((s,i)=>`<option value="${i}" ${s.pos==="DP"?"selected":""} ${g.useDP?"":"disabled"}>${i+1}番 ${esc(pname(s.pid))}</option>`).join("")}</select></label>
-    </div>
     <div class="btns">
       <button class="btn s" data-act="newGame">＋新しい試合</button>
       <button class="btn w s" data-act="copyGame">コピーして新規</button>
@@ -378,7 +388,7 @@ function vOrder(){
   <div class="ls${live?" live":""}">
     <div class="lh"><div>打順</div><div>守備</div><div>名前${!live && !errs.length ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">✓ OK</span>` : live ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">試合中（交代は自動記録）</span>` : ""}</div><div>背番号</div></div>
     ${bd.slots.map((s,i) => row(i+1, i, s, g.lineup[i])).join("")}
-    ${bd.flex ? row("FP", "F", bd.flex, g.flex) : ""}
+    ${bd.flex ? (live && !bd.flex.pid ? `<div class="lr"><div class="o">FP</div><div class="p"></div><div class="n muted" style="padding-left:10px">DP/FP解除</div><div></div></div>` : row("FP", "F", bd.flex, g.flex)) : ""}
     <div class="lsep" data-dt="benchArea">${live ? "控え・退いた選手" : "控え選手（ここに落とすとベンチへ）"}</div>
     <div class="bgrid">${bench.length ? bench.map(benchChip).join("") : `<span class="muted">なし</span>`}</div>
   </div>
@@ -386,7 +396,9 @@ function vOrder(){
   ${live && bd.c.warns.length ? `<div class="msg warn olist">${bd.c.warns.map(esc).join("<br>")}</div>` : ""}
   <p class="hint">${live
     ? "控えの選手を打順か図へ＝交代（代打・代走・守備）<br>守備欄や図の上で入れ替え＝守備位置の変更（打順は変わりません）"
-    : "名前をドラッグ（またはタップ→タップ）で入れ替え。<br>名前同士＝打順の入れ替え／守備欄・図の上＝守備の入れ替え／控えと＝選手の入れ替え"}</p>
+    : "名前をドラッグ（またはタップ→タップ）で入れ替え。<br>名前同士＝打順の入れ替え／守備欄・図の上＝守備の入れ替え／控えと＝選手の入れ替え"}
+    ${g.useDP ? (live ? "<br>DP/FP：FPの名前をDPの打順へ＝FPが打撃に入る（DP退く）／DPを図のFPの守備へ＝DPが守備に就く（FP退く）"
+                      : "<br>DP/FP：打順の選手を図の「DP」へ＝DPに指定／控えをFPの行へ入れ、FPを空いた守備へ") : ""}</p>
   ${askHtml()}`;
 }
 
@@ -450,6 +462,10 @@ function editMove(src, dst){
     if (a.pid || !S || !S.pid) return false;
     S.pid = "";
   } else return false;
+  if (g.useDP && g.flex.pos === "DP"){
+    const d = JSON.parse(before); g.lineup = d.lineup; g.flex = d.flex;
+    toast("FPはDPにできません"); return false;
+  }
   undoStack.push({gid: g.id, data: before}); if (undoStack.length > 30) undoStack.shift();
   if (g.subs.length) toast("注意：交代記録のある試合のスタメンを変更しました");
   return true;
@@ -474,6 +490,21 @@ function gameMove(src, dst){
   }
   if (dst.t === "benchArea"){ toast("下げる選手は、控えの選手を上に重ねて交代してください"); return false; }
   if (src.t === "pos" && !a.slot){ toast("その守備には選手がいません"); return false; }
+  // DP/FLEXの特例
+  if (c.flex && c.flex.pid){
+    const dpKey = holderKey(c.slots, null, "DP");
+    // FPがDPの打順に入る（DPは退く）
+    if (a.slot === "F" && dpKey && ((dst.t === "slot" && b.slot === dpKey) || (dst.t === "pos" && dst.v === "DP"))){
+      g.subs.push({inn, kind:"FP打撃", slot: dpKey, pid: c.flex.pid, pos: c.flex.pos, outPid: cur(dpKey).pid, b: batch});
+      afterGame(c); return true;
+    }
+    // DPがFPの守備に就く（FPは退く）
+    if (dpKey && a.slot === dpKey && b.slot === "F" && dst.t !== "slot"){
+      g.subs.push({inn, kind:"DP守備", slot: dpKey, pid: cur(dpKey).pid, pos: c.flex.pos, outPid: c.flex.pid, b: batch});
+      afterGame(c); return true;
+    }
+  }
+  if (b.slot === "F" && c.flex && !c.flex.pid){ toast("DP/FPは解除されています"); return false; }
   // 名前同士（打順の入れ替え）は試合中は不可
   if (dst.t === "slot" && src.t === "slot"){ toast("試合中は打順を入れ替えられません（守備欄か図でドラッグ）"); return false; }
   // 守備位置の入れ替え
@@ -688,6 +719,14 @@ document.addEventListener("click", ev => {
     S.games.forEach(x => { x.lineup.forEach(s => { if (s.pid===id) s.pid=""; }); if (x.flex.pid===id) x.flex.pid=""; x.subs = x.subs.filter(e => e.pid!==id); });
   }
   else if (a === "info"){ infoOpen = !infoOpen; render(); return; }
+  else if (a === "dpToggle"){
+    if (!g.useDP){ g.useDP = true; toast("DP/FPオン：打順の選手を図の「DP」へ"); }
+    else {
+      if ((g.flex.pid || g.lineup.some(s => s.pos === "DP")) && !confirm("DP/FPを解除しますか？（FPの選手は控えに戻ります）")) return;
+      g.useDP = false; g.lineup.forEach(s => { if (s.pos === "DP") s.pos = ""; }); g.flex = {pid:"", pos:""};
+    }
+    pick = null;
+  }
   else if (a === "mode2"){ S.mode = b.dataset.m; pick = null; }
   else if (a === "inn"){ g.inn = Math.min(20, Math.max(1, (g.inn||1) + Number(b.dataset.d))); }
   else if (a === "askKind"){
