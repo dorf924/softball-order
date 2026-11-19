@@ -88,6 +88,14 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ghost{position:fixed;z-index:50;pointer-events:none;background:#fff;border:2px solid var(--gold);border-radius:6px;padding:4px 10px;font-weight:bold;
  box-shadow:0 4px 12px rgba(0,0,0,.25);transform:translate(-50%,-130%);font-size:15px;white-space:nowrap}
 .hint{font-size:11px;color:#777;margin:6px 2px 0;line-height:1.5}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
+.bchip{position:relative;background:var(--box);border:1px solid var(--boxl);border-radius:4px;height:32px;display:flex;align-items:center;justify-content:center;
+ font-size:15px;font-weight:bold;white-space:nowrap;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.bchip small{font-weight:normal;color:#888;font-size:11px;margin-left:3px}
+.bchip .bt{position:absolute;top:0;right:0;font-style:normal;font-size:9px;font-weight:normal;background:#fff6dc;color:#8a6d1c;padding:0 3px;border-radius:0 3px 0 4px;line-height:13px}
+.bchip .bt.gr{background:#eee;color:#999}
+.bchip.no{color:#aaa}
+.bchip.re{border-color:#d9c48a}
 .olist{font-size:12px;padding:6px 8px;margin-top:6px;border-radius:6px}
 .lr .p span{display:flex;align-items:center;justify-content:center;width:36px;height:24px;border:1px dashed transparent;border-radius:4px;
  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -165,6 +173,7 @@ function uid(){ return Date.now().toString(36) + Math.random().toString(36).slic
 function today(){ const d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function P(id){ return S.players.find(p => p.id === id); }
+function surname(n){ const t = String(n||"").trim(); const m = t.split(/[\s\u3000]+/); return m[0] || t; }
 function pname(id){ const p = P(id); return p ? p.name : ""; }
 function pnum(id){ const p = P(id); return p ? p.num : ""; }
 function plabel(id){ const p = P(id); return p ? (p.num !== "" ? "#"+p.num+" " : "") + p.name : "—"; }
@@ -327,15 +336,13 @@ function vOrder(){
     return `<div class="lr" data-dt="slot" data-dv="${v}"><div class="o">${lbl}</div>
       <div class="p"><span class="${s.pos?"":"un"}${sel("lpos",v)}" data-dt="lpos" data-dv="${v}">${s.pos ? esc(POS[s.pos]) : "未"}</span></div>
       <div class="n"><span class="${p?"":"empty"}${sel("slot",v)}" data-dt="slot" data-dv="${v}">${p ? esc(p.name) : "（空き）"}${mark}</span></div><div class="b">${esc(p?.num ?? "")}</div></div>`; };
-  const benchRow = p => {
-    let lb = "控", cls = "", tag = "";
+  const benchChip = p => {
+    let cls = "bchip", tag = "";
     if (live && bd.c.out.has(p.id)){
-      lb = "退";
-      if (bd.c.starters[p.id] === undefined || bd.c.reentered.has(p.id)) { cls = " no"; tag = `<i class="tg gr">出場不可</i>`; }
-      else tag = `<i class="tg">再出場可</i>`;
+      if (bd.c.starters[p.id] === undefined || bd.c.reentered.has(p.id)) { cls += " no"; tag = `<em class="bt gr">不可</em>`; }
+      else { cls += " re"; tag = `<em class="bt">再可</em>`; }
     }
-    return `<div class="lr bn${cls}" data-dt="bench" data-dv="${p.id}"><div class="o">${lb}</div><div class="p"></div>
-      <div class="n"><span class="${sel("bench",p.id).trim()}" data-dt="bench" data-dv="${p.id}">${esc(p.name)}${tag}</span></div><div class="b">${esc(p.num)}</div></div>`; };
+    return `<div class="${cls}${sel("bench",p.id)}" data-dt="bench" data-dv="${p.id}">${esc(surname(p.name))}<small>${esc(p.num)}</small>${tag}</div>`; };
   const lastB = g.subs.length;
   return `
   <div class="gbar">
@@ -373,7 +380,7 @@ function vOrder(){
     ${bd.slots.map((s,i) => row(i+1, i, s, g.lineup[i])).join("")}
     ${bd.flex ? row("FP", "F", bd.flex, g.flex) : ""}
     <div class="lsep" data-dt="benchArea">${live ? "控え・退いた選手" : "控え選手（ここに落とすとベンチへ）"}</div>
-    ${bench.length ? bench.map(benchRow).join("") : `<div class="lr bn"><div></div><div></div><div class="n muted">なし</div><div></div></div>`}
+    <div class="bgrid">${bench.length ? bench.map(benchChip).join("") : `<span class="muted">なし</span>`}</div>
   </div>
   ${errs.length ? `<div class="msg err olist">${errs.map(esc).join("<br>")}</div>` : ""}
   ${live && bd.c.warns.length ? `<div class="msg warn olist">${bd.c.warns.map(esc).join("<br>")}</div>` : ""}
@@ -496,7 +503,7 @@ function emptyPos(k){ const g = G(), bd = board(g); return k.t === "pos" && !hol
 let drag = null;
 document.addEventListener("pointerdown", e => {
   if (S.tab !== "order" || ask) return;
-  const el = e.target.closest(".pbox[data-dt], .lr .n span[data-dt], .lr .p span[data-dt]");
+  const el = e.target.closest(".pbox[data-dt], .lr .n span[data-dt], .lr .p span[data-dt], .bchip[data-dt]");
   if (!el) return;
   drag = {el, x: e.clientX, y: e.clientY, on: false, ghost: null, over: null};
 });
