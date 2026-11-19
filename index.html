@@ -167,6 +167,7 @@ function load(){
   if (!S.games.length){ const g = blankGame(); S.games.push(g); S.cur = g.id; }
   if (!S.games.find(g => g.id === S.cur)) S.cur = S.games[0].id;
   if (S.tab === "subs") S.tab = "order";
+  if (!S.year){ const d = new Date(); S.year = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; }
 }
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -183,7 +184,7 @@ function pname(id){ const p = P(id); return p ? p.name : ""; }
 function pnum(id){ const p = P(id); return p ? p.num : ""; }
 function plabel(id){ const p = P(id); return p ? (p.num !== "" ? "#"+p.num+" " : "") + p.name : "—"; }
 function posLabel(k){ if (!k) return "—"; return /^\d$/.test(k) ? k+" "+POS[k] : POS[k]; }
-function sortedPlayers(){ return [...S.players].sort((a,b) => (Number(a.num)||999) - (Number(b.num)||999) || a.name.localeCompare(b.name,"ja")); }
+function sortedPlayers(){ return S.players.filter(p => !p.grad).sort((a,b) => (Number(a.num)||999) - (Number(b.num)||999) || a.name.localeCompare(b.name,"ja")); }
 function G(){ return S.games.find(g => g.id === S.cur); }
 function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = "none", 1800); }
 function fmtDate(d){ if (!d) return ""; const [y,m,dd] = d.split("-"); const w = "日月火水木金土"[new Date(d).getDay()]; return `${Number(m)}/${Number(dd)}(${w})`; }
@@ -380,11 +381,33 @@ function vPlayers(){
     </div>
   </section>
   <section class="card">
-    <h2>選手一覧（${list.length}人）</h2>
+    <h2>選手一覧（${list.length}人）<span class="muted" style="font-weight:normal;margin-left:6px">${S.year}年度</span></h2>
     ${list.length ? `<table><tr><th class="num">背番</th><th>名前</th><th>学年</th><th>投打</th><th></th></tr>
       ${list.map(x=>`<tr><td class="num">${esc(x.num)}</td><td>${esc(x.name)}${x.memo?`<div class="muted">${esc(x.memo)}</div>`:""}</td><td>${esc(x.grade)}</td><td style="font-size:13px">${esc(x.bt)}</td>
       <td style="white-space:nowrap"><button class="btn w s" data-act="editPlayer" data-id="${x.id}">編集</button> <button class="btn r s" data-act="delPlayer" data-id="${x.id}">削除</button></td></tr>`).join("")}</table>`
       : `<p class="muted">まだ選手がいません。上のフォームから登録してください。</p>`}
+  </section>
+  ${yearCard()}`;
+}
+function yearCard(){
+  const cur = sortedPlayers();
+  const n = g => cur.filter(p => p.grade === g).length;
+  const noG = cur.filter(p => !["1","2","3"].includes(p.grade)).length;
+  const grads = S.players.filter(p => p.grad);
+  return `<section class="card">
+    <h2>年度更新</h2>
+    <p style="margin:0 0 6px;font-size:14px">${S.year}年度 → <b>${S.year+1}年度</b>に更新すると</p>
+    <ul style="margin:0 0 6px;padding-left:20px;font-size:14px;line-height:1.7">
+      <li>1年生 ${n("1")}人 → 2年生</li><li>2年生 ${n("2")}人 → 3年生</li>
+      <li>3年生 ${n("3")}人 → <b>卒業</b>（選手一覧・控えから消えます）</li>
+    </ul>
+    ${noG ? `<p class="msg warn" style="margin:0 0 6px">学年が未入力の選手が${noG}人います（更新されません）</p>` : ""}
+    <div class="btns">
+      <button class="btn s" data-act="yearUp">${S.year+1}年度に更新</button>
+      ${S.yearBak ? `<button class="btn w s" data-act="yearUndo">更新を取り消す（${S.yearBak.year}年度に戻す）</button>` : ""}
+    </div>
+    ${grads.length ? `<p class="muted" style="margin-top:10px">卒業生 ${grads.length}人：過去の試合記録に名前を残すため保存しています。</p>
+      <button class="btn r s" data-act="purgeGrads">卒業生を完全に削除</button>` : ""}
   </section>`;
 }
 
@@ -852,9 +875,30 @@ document.addEventListener("click", ev => {
       const d = JSON.parse(undoStack.splice(i,1)[0].data); g.lineup = d.lineup; g.flex = d.flex; break; }
     pick = null;
   }
+  else if (a === "yearUp"){
+    const cur = sortedPlayers(), g3 = cur.filter(p => p.grade === "3");
+    if (!confirm(`${S.year+1}年度に更新します。\n3年生 ${g3.length}人は卒業として一覧から消えます。\n${g3.map(p=>p.name).join("、")}\n\nよろしいですか？`)) return;
+    S.yearBak = { year: S.year, players: JSON.parse(JSON.stringify(S.players)) };
+    S.year += 1;
+    cur.forEach(p => { if (p.grade === "3") p.grad = S.year - 1; else if (p.grade === "1" || p.grade === "2") p.grade = String(Number(p.grade) + 1); });
+    toast(`${S.year}年度に更新しました`);
+  }
+  else if (a === "yearUndo"){
+    if (!confirm(`${S.yearBak.year}年度の状態に戻しますか？`)) return;
+    S.players = S.yearBak.players; S.year = S.yearBak.year; delete S.yearBak; toast("元に戻しました");
+  }
+  else if (a === "purgeGrads"){
+    const ids = S.players.filter(p => p.grad).map(p => p.id);
+    if (!confirm(`卒業生 ${ids.length}人を完全に削除します。過去の試合記録からも名前が消えます。よろしいですか？`)) return;
+    S.players = S.players.filter(p => !p.grad);
+    S.games.forEach(x => { x.lineup.forEach(s => { if (ids.includes(s.pid)) s.pid = ""; }); if (ids.includes(x.flex.pid)) x.flex.pid = ""; x.subs = x.subs.filter(e => !ids.includes(e.pid)); });
+    delete S.yearBak; toast("削除しました");
+  }
   else if (a === "newGame"){ const n = blankGame(); S.games.push(n); S.cur = n.id; toast("新しい試合を作りました"); }
   else if (a === "copyGame"){
-    const n = JSON.parse(JSON.stringify(g)); n.id = uid(); n.date = today(); n.opp = ""; n.subs = [];
+    const n = JSON.parse(JSON.stringify(g)); n.id = uid(); n.date = today(); n.opp = ""; n.subs = []; n.inn = 1;
+    const gone = id => id && (!P(id) || P(id).grad);
+    n.lineup.forEach(s => { if (gone(s.pid)) s.pid = ""; }); if (gone(n.flex.pid)) n.flex.pid = "";
     S.games.push(n); S.cur = n.id; toast("コピーしました（交代記録は空）");
   }
   else if (a === "delGame"){
