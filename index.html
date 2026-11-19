@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>ソフトボール オーダー管理</title>
 <style>
-:root{--main:#1f3a5f;--sub:#e8eef5;--line:#ccd5df;--err:#c0392b;--warn:#b9770e;--ok:#1e8449}
+:root{--main:#1b4d3e;--gold:#b8973a;--sub:#e9f0eb;--box:#f7f9f6;--boxl:#d5ddd5;--line:#cfd8d1;--err:#c0392b;--warn:#b9770e;--ok:#1e8449}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;background:#f4f6f9;color:#222;font-size:15px;
  padding-bottom:calc(64px + env(safe-area-inset-bottom))}
@@ -20,7 +20,7 @@ header .g{font-size:12px;opacity:.85;margin-top:2px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:10}
 nav button{flex:1;border:0;background:none;padding:10px 0 12px;font-size:13px;color:#666}
 nav button.on{color:var(--main);font-weight:bold;box-shadow:inset 0 3px 0 var(--main)}
-main{padding:12px;max-width:760px;margin:0 auto}
+main{padding:8px 10px;max-width:760px;margin:0 auto}
 section.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
 h2{font-size:15px;margin:0 0 10px;padding-left:8px;border-left:4px solid var(--main)}
 label{display:block;font-size:12px;color:#555;margin-bottom:8px}
@@ -48,6 +48,47 @@ th{font-size:12px;color:#555;background:var(--sub)}
 .bench span{display:inline-block;margin:0 6px 6px 0;padding:4px 8px;background:var(--sub);border-radius:6px;font-size:13px}
 .field{max-width:420px;margin:0 auto;display:block}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;display:none;z-index:20}
+/* ===== オーダー画面（1画面） ===== */
+header{padding:calc(6px + env(safe-area-inset-top)) 12px 6px;border-bottom:2px solid var(--gold);display:flex;align-items:baseline;gap:10px}
+header h1{font-size:15px;white-space:nowrap}
+header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gbar{display:flex;gap:6px;margin-bottom:6px}
+.gbar button,.gbar select{height:34px}
+.p .un{color:#d0a0a0;font-weight:normal}
+.gbar select{flex:1;font-size:14px;padding:6px}
+.gbar button{flex:0 0 auto;border:1px solid var(--main);background:#fff;color:var(--main);border-radius:6px;padding:0 10px;font-size:13px}
+.gbar button:disabled{opacity:.35}
+.fld{position:relative;height:200px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;overflow:hidden}
+.fld svg{position:absolute;inset:0;width:100%;height:100%}
+.pbox{position:absolute;width:31%;height:34px;transform:translate(-50%,-50%);background:var(--box);border:1px solid var(--boxl);border-radius:4px;
+ padding:2px 4px;text-align:center;line-height:1.15;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.pbox .pl{font-size:9px;color:var(--main);font-weight:bold}
+.pbox .pn{font-size:13px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbox .pn small{font-weight:normal;color:#777;font-size:10px;margin-left:2px}
+.pbox.empty .pn{color:#bbb}
+.dpnote{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--main);font-weight:bold}
+.ls{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.lh,.lr{display:grid;grid-template-columns:38px 46px 1fr 50px;align-items:center}
+.lh{background:var(--main);color:#fff;font-size:12px;font-weight:bold;border-bottom:2px solid var(--gold);height:26px}
+.lh div,.lr>div{text-align:center}
+.lh div:nth-child(3){text-align:left;padding-left:10px}
+.lr{height:29px;border-bottom:1px solid var(--line)}
+.lr .o{font-weight:bold;color:var(--main);font-size:15px}
+.lr .p{font-size:14px;font-weight:bold;color:var(--main);border-left:1px solid var(--line);height:100%;display:flex;align-items:center;justify-content:center}
+.lr .n{text-align:left;padding:0 4px;height:100%;display:flex;align-items:center}
+.lr .n span{display:block;width:100%;background:var(--box);border:1px solid var(--boxl);border-radius:4px;padding:2px 8px;font-size:15px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.lr .n span.empty{color:#bbb}
+.lr .b{font-size:14px}
+.lr.bn .o{font-size:12px;color:#888}
+.lsep{background:var(--sub);color:var(--main);font-size:11px;font-weight:bold;padding:3px 10px;border-bottom:1px solid var(--line);border-top:1px solid var(--main)}
+.sel{outline:2px solid var(--gold)!important;background:#fff6dc!important}
+.over{background:#dcebdf!important}
+.dragging{opacity:.35}
+.ghost{position:fixed;z-index:50;pointer-events:none;background:#fff;border:2px solid var(--gold);border-radius:6px;padding:4px 10px;font-weight:bold;
+ box-shadow:0 4px 12px rgba(0,0,0,.25);transform:translate(-50%,-130%);font-size:15px;white-space:nowrap}
+.hint{font-size:11px;color:#777;margin:6px 2px 0;line-height:1.5}
+.olist{font-size:12px;padding:6px 8px;margin-top:6px;border-radius:6px}
 .sheet h3{text-align:center;margin:0 0 4px;font-size:18px}
 .sheet .info{text-align:center;font-size:13px;margin-bottom:8px}
 .sheet table th,.sheet table td{border:1px solid #888;text-align:center;padding:6px}
@@ -226,24 +267,47 @@ function vPlayers(){
   </section>`;
 }
 
-/* --- オーダー --- */
+/* --- オーダー（1画面・ドラッグで入れ替え） --- */
+const POS_FULL = { "1":"投手","2":"捕手","3":"一塁手","4":"二塁手","5":"三塁手","6":"遊撃手","7":"左翼手","8":"中堅手","9":"右翼手" };
+const FXY = { "8":[50,21],"7":[17,47],"9":[83,47],"6":[32,87],"4":[68,87],"5":[17,127],"3":[83,127],"1":[50,139],"2":[50,178] };
+let infoOpen = false;
+function allSlots(g){ return g.useDP ? g.lineup.concat([g.flex]) : g.lineup; }
+function fieldHtml(slots, flex, live){
+  const at = {};
+  slots.concat(flex ? [flex] : []).forEach(s => { if (/^\d$/.test(s.pos) && s.pid) at[s.pos] = s.pid; });
+  const dp = slots.find(s => s.pos === "DP" && s.pid);
+  const boxes = Object.keys(FXY).map(k => {
+    const [x,y] = FXY[k], id = at[k], p = P(id);
+    const cls = "pbox" + (p ? "" : " empty") + (live && pick && pick.t==="pos" && pick.v===k ? " sel" : "");
+    return `<div class="${cls}" ${live?`data-dt="pos" data-dv="${k}"`:""} style="left:${x}%;top:${y}px">
+      <div class="pl">${POS_FULL[k]}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
+  }).join("");
+  return `<div class="fld">
+    <svg viewBox="0 0 100 200" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M50 196 L0 104 L0 0 L100 0 L100 104 Z" fill="#f3f7f1"/>
+      <path d="M50 196 L0 104 M50 196 L100 104" stroke="#9fb89a" stroke-width=".6" fill="none" vector-effect="non-scaling-stroke"/>
+      <path d="M50 186 L80 130 L50 74 L20 130 Z" fill="#e6efe2" stroke="#9fb89a" stroke-width="1" vector-effect="non-scaling-stroke"/>
+    </svg>
+    ${boxes}
+    ${dp ? `<div class="dpnote">DP：${esc(pname(dp.pid))}</div>` : ""}
+  </div>`;
+}
 function vOrder(){
   const g = G();
   const errs = validate(g);
-  const used = g.lineup.map(s=>s.pid).concat(g.useDP ? [g.flex.pid] : []).filter(Boolean);
+  const used = allSlots(g).map(s => s.pid).filter(Boolean);
   const bench = sortedPlayers().filter(p => !used.includes(p.id));
+  const sel = (t,v) => pick && pick.t===t && String(pick.v)===String(v) ? " sel" : "";
+  const row = (lbl, v, s) => { const p = P(s.pid);
+    return `<div class="lr" data-dt="slot" data-dv="${v}"><div class="o">${lbl}</div><div class="p">${s.pos ? esc(POS[s.pos]) : `<span class="un">未</span>`}</div>
+      <div class="n"><span class="${p?"":"empty"}${sel("slot",v)}" data-dt="slot" data-dv="${v}">${p ? esc(p.name) : "（空き）"}</span></div><div class="b">${esc(p?.num ?? "")}</div></div>`; };
   return `
-  <section class="card noprint">
-    <h2>試合</h2>
+  <div class="gbar">
     <select data-act="pickGame">${[...S.games].sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<option value="${x.id}" ${x.id===g.id?"selected":""}>${esc(gameTitle(x)||"（無題）")}</option>`).join("")}</select>
-    <div class="btns">
-      <button class="btn s" data-act="newGame">＋新しい試合</button>
-      <button class="btn w s" data-act="copyGame">この試合をコピーして新規</button>
-      <button class="btn r s" data-act="delGame">この試合を削除</button>
-    </div>
-  </section>
-  <section class="card">
-    <h2>試合情報</h2>
+    <button data-act="info">${infoOpen ? "閉じる" : "試合情報"}</button>
+    <button data-act="undo" ${undoStack.some(u=>u.gid===g.id)?"":"disabled"}>↶戻す</button>
+  </div>
+  ${infoOpen ? `<section class="card">
     <div class="row">
       <label>日付<input type="date" data-g="date" value="${esc(g.date)}"></label>
       <label>先攻/後攻<select data-g="side">${["先攻","後攻"].map(x=>`<option ${g.side===x?"selected":""}>${x}</option>`).join("")}</select></label>
@@ -253,28 +317,120 @@ function vOrder(){
       <label>対戦相手<input data-g="opp" value="${esc(g.opp)}"></label>
       <label>球場<input data-g="place" value="${esc(g.place)}"></label>
     </div>
-  </section>
-  <section class="card">
-    <h2>スターティングオーダー</h2>
     <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:#222"><input type="checkbox" data-act="toggleDP" style="width:auto" ${g.useDP?"checked":""}> DP/FLEXを使う</label>
-    <table class="order">
-      <tr><th class="num">打順</th><th>選手</th><th style="width:96px">守備</th><th style="width:66px"></th></tr>
-      ${g.lineup.map((s,i)=>`<tr><td class="num">${i+1}</td>
-        <td><select data-slot="${i}" data-f="pid">${playerOptions(s.pid, used)}</select></td>
-        <td><select data-slot="${i}" data-f="pos">${posOptions(g.useDP?POS_START:POS_START.slice(0,9), s.pos)}</select></td>
-        <td><div class="mv"><button data-act="up" data-i="${i}">▲</button><button data-act="down" data-i="${i}">▼</button></div></td></tr>`).join("")}
-      ${g.useDP?`<tr style="background:#fafafa"><td class="num" style="font-size:12px">FLEX</td>
-        <td><select data-slot="F" data-f="pid">${playerOptions(g.flex.pid, used)}</select></td>
-        <td><select data-slot="F" data-f="pos">${posOptions(POS_START.slice(0,9), g.flex.pos)}</select></td><td></td></tr>`:""}
-    </table>
-    <p class="muted">● は既に打順に入っている選手です。</p>
-    ${errs.length ? `<div class="msg err">${errs.map(esc).join("<br>")}</div>` : `<div class="msg ok">オーダーOK</div>`}
-  </section>
-  <section class="card">
-    <h2>控え（${bench.length}人）</h2>
-    <div class="bench">${bench.length ? bench.map(p=>`<span>${esc(plabel(p.id))}</span>`).join("") : `<span class="muted" style="background:none">なし</span>`}</div>
-  </section>`;
+    <div class="row" style="margin-bottom:8px">
+      <label>DPにする打順<select data-act="setDP"><option value="">—</option>${g.lineup.map((s,i)=>`<option value="${i}" ${s.pos==="DP"?"selected":""} ${g.useDP?"":"disabled"}>${i+1}番 ${esc(pname(s.pid))}</option>`).join("")}</select></label>
+    </div>
+    <div class="btns">
+      <button class="btn s" data-act="newGame">＋新しい試合</button>
+      <button class="btn w s" data-act="copyGame">コピーして新規</button>
+      <button class="btn r s" data-act="delGame">削除</button>
+    </div>
+  </section>` : ""}
+  ${fieldHtml(g.lineup, g.useDP ? g.flex : null, true)}
+  <div class="ls">
+    <div class="lh"><div>打順</div><div>守備</div><div>名前${errs.length ? "" : `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">✓ OK</span>`}</div><div>背番号</div></div>
+    ${g.lineup.map((s,i) => row(i+1, i, s)).join("")}
+    ${g.useDP ? row("FP", "F", g.flex) : ""}
+    <div class="lsep" data-dt="benchArea">控え選手（ここに落とすとベンチへ）</div>
+    ${bench.length ? bench.map(p => `<div class="lr bn" data-dt="bench" data-dv="${p.id}"><div class="o">控</div><div class="p"></div>
+      <div class="n"><span class="${sel("bench",p.id).trim()}" data-dt="bench" data-dv="${p.id}">${esc(p.name)}</span></div><div class="b">${esc(p.num)}</div></div>`).join("")
+      : `<div class="lr bn"><div></div><div></div><div class="n muted">なし</div><div></div></div>`}
+  </div>
+  ${errs.length ? `<div class="msg err olist">${errs.map(esc).join("<br>")}</div>` : ""}
+  <p class="hint">名前をドラッグ（またはタップ→タップ）で入れ替え。<br>リスト同士＝打順の入れ替え／図の上＝守備の入れ替え／控えと入れ替え＝選手交代</p>`;
 }
+
+/* ===== ドラッグ・タップで入れ替え ===== */
+let pick = null;            // タップで選択中のもの {t,v}
+const undoStack = [];
+function slotRef(g, v){ return v === "F" ? g.flex : g.lineup[Number(v)]; }
+function holderOf(g, k){ return allSlots(g).find(s => s.pos === k); }
+function applyMove(src, dst){
+  const g = G();
+  if (!src || !dst || (src.t === dst.t && String(src.v) === String(dst.v))) return false;
+  const before = JSON.stringify({lineup: g.lineup, flex: g.flex});
+  let S = null, B = null;
+  if (src.t === "slot") S = slotRef(g, src.v);
+  else if (src.t === "pos") { S = holderOf(g, src.v); if (!S || !S.pid) { toast("その守備には選手がいません"); return false; } }
+  else if (src.t === "bench") B = src.v;
+  else return false;
+  if (dst.t === "slot"){
+    const D = slotRef(g, dst.v);
+    if (B) D.pid = B;
+    else { if (S === D) return false; [S.pid, D.pid] = [D.pid, S.pid]; [S.pos, D.pos] = [D.pos, S.pos]; }
+  } else if (dst.t === "pos"){
+    const k = dst.v, H = holderOf(g, k);
+    if (B){
+      if (H) H.pid = B;
+      else { const E = allSlots(g).find(s => !s.pid); if (!E) { toast("空いている打順がありません"); return false; } E.pid = B; E.pos = k; }
+    } else {
+      if (H === S) return false;
+      const tmp = S.pos; S.pos = k; if (H) H.pos = tmp;
+    }
+  } else if (dst.t === "bench"){
+    if (B) return false;
+    S.pid = dst.v;
+  } else if (dst.t === "benchArea"){
+    if (B || !S.pid) return false;
+    S.pid = "";
+  } else return false;
+  undoStack.push({gid: g.id, data: before}); if (undoStack.length > 30) undoStack.shift();
+  if (g.subs.length) toast("注意：交代記録のある試合のスタメンを変更しました");
+  return true;
+}
+function keyOf(el){ return el ? {t: el.dataset.dt, v: el.dataset.dv} : null; }
+let drag = null;
+document.addEventListener("pointerdown", e => {
+  if (S.tab !== "order") return;
+  const el = e.target.closest(".pbox[data-dt], .lr .n span[data-dt]");
+  if (!el) return;
+  drag = {el, x: e.clientX, y: e.clientY, on: false, ghost: null, over: null};
+});
+document.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (!drag.on){
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+    const k = keyOf(drag.el);
+    if (k.t === "pos" && !(holderOf(G(), k.v) || {}).pid) { drag = null; return; }
+    drag.on = true;
+    drag.ghost = document.createElement("div"); drag.ghost.className = "ghost";
+    drag.ghost.textContent = (drag.el.querySelector(".pn") || drag.el).childNodes[0].textContent;
+    document.body.appendChild(drag.ghost); drag.el.classList.add("dragging");
+  }
+  e.preventDefault();
+  drag.ghost.style.left = e.clientX + "px"; drag.ghost.style.top = e.clientY + "px";
+  const t = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-dt]");
+  if (drag.over !== t){ drag.over?.classList.remove("over"); drag.over = t; if (t && t !== drag.el) t.classList.add("over"); }
+}, {passive: false});
+function endDrag(e, cancel){
+  if (!drag) return;
+  const d = drag; drag = null;
+  d.ghost?.remove(); d.el.classList.remove("dragging"); d.over?.classList.remove("over");
+  if (cancel) return;
+  if (d.on){
+    const t = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-dt]");
+    pick = null;
+    if (t && applyMove(keyOf(d.el), keyOf(t))) save();
+    render(); return;
+  }
+  // タップ操作
+  const k = keyOf(d.el);
+  if (!pick){
+    if (k.t === "pos" && !(holderOf(G(), k.v) || {}).pid) { toast("先に選手をタップしてください"); return; }
+    pick = k;
+  } else if (pick.t === k.t && String(pick.v) === String(k.v)) pick = null;
+  else { if (applyMove(pick, k)) save(); pick = null; }
+  render();
+}
+document.addEventListener("pointerup", e => endDrag(e, false));
+document.addEventListener("pointercancel", e => endDrag(e, true));
+// タップ選択中に控え見出しをタップ → ベンチへ
+document.addEventListener("click", e => {
+  if (!pick || S.tab !== "order") return;
+  const t = e.target.closest('[data-dt="benchArea"]');
+  if (t){ if (applyMove(pick, {t:"benchArea"})) save(); pick = null; render(); }
+});
 
 /* --- 交代 --- */
 function vSubs(){
@@ -327,22 +483,6 @@ function currentTable(g, c){
 }
 
 /* --- メンバー表 --- */
-function fieldSvg(slots, flex){
-  const XY = {"1":[150,188],"2":[150,262],"3":[222,170],"4":[196,124],"5":[78,170],"6":[104,124],"7":[52,64],"8":[150,34],"9":[248,64]};
-  const at = {};
-  slots.concat(flex ? [flex] : []).forEach(s => { if (/^\d$/.test(s.pos) && s.pid) at[s.pos] = s.pid; });
-  const dp = slots.find(s => s.pos === "DP");
-  let t = "";
-  for (const k in XY){ const [x,y] = XY[k]; const n = pname(at[k]) || "—";
-    t += `<rect x="${x-44}" y="${y-13}" width="88" height="26" rx="5" fill="#fff" stroke="#1f3a5f"/>`
-       + `<text x="${x}" y="${y+5}" font-size="13" text-anchor="middle" fill="#222">${esc(POS[k])} ${esc(n)}</text>`; }
-  return `<svg class="field" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-    <path d="M150 280 L20 150 A184 184 0 0 1 280 150 Z" fill="#e9f3e6" stroke="#9bb894"/>
-    <path d="M150 250 L215 185 L150 120 L85 185 Z" fill="#f3e3cf" stroke="#c9a77c"/>
-    ${t}
-    ${dp ? `<text x="150" y="296" font-size="12" text-anchor="middle" fill="#555">DP：${esc(pname(dp.pid))}</text>` : ""}
-  </svg>`;
-}
 let sheetMode = "start";
 function vSheet(){
   const g = G();
@@ -372,7 +512,7 @@ function vSheet(){
     </table>
     <div style="margin-top:10px;font-size:13px"><b>控え：</b>${bench.map(p=>esc((p.num!==""?"#"+p.num+" ":"")+p.name)).join("、") || "なし"}</div>
   </section>
-  <section class="card">${fieldSvg(base.slots, base.flex)}</section>`;
+  ${fieldHtml(base.slots, base.flex, false)}`;
 }
 function sheetText(){
   const g = G(); const c = computeCurrent(g);
@@ -410,7 +550,7 @@ function vData(){
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-tab],[data-act]");
   if (!b || b.tagName === "SELECT" || b.type === "checkbox") return;
-  if (b.dataset.tab){ S.tab = b.dataset.tab; editId = ""; save(); render(); window.scrollTo(0,0); return; }
+  if (b.dataset.tab){ S.tab = b.dataset.tab; editId = ""; pick = null; save(); render(); window.scrollTo(0,0); return; }
   const g = G(), a = b.dataset.act;
   if (a === "savePlayer"){
     const name = document.getElementById("fName").value.trim();
@@ -430,6 +570,12 @@ document.addEventListener("click", ev => {
     S.players = S.players.filter(p => p.id !== id);
     S.games.forEach(x => { x.lineup.forEach(s => { if (s.pid===id) s.pid=""; }); if (x.flex.pid===id) x.flex.pid=""; x.subs = x.subs.filter(e => e.pid!==id); });
   }
+  else if (a === "info"){ infoOpen = !infoOpen; render(); return; }
+  else if (a === "undo"){
+    for (let i = undoStack.length - 1; i >= 0; i--) if (undoStack[i].gid === g.id){
+      const d = JSON.parse(undoStack.splice(i,1)[0].data); g.lineup = d.lineup; g.flex = d.flex; break; }
+    pick = null;
+  }
   else if (a === "newGame"){ const n = blankGame(); S.games.push(n); S.cur = n.id; toast("新しい試合を作りました"); }
   else if (a === "copyGame"){
     const n = JSON.parse(JSON.stringify(g)); n.id = uid(); n.date = today(); n.opp = ""; n.subs = [];
@@ -440,12 +586,6 @@ document.addEventListener("click", ev => {
     S.games = S.games.filter(x => x.id !== g.id);
     if (!S.games.length) S.games.push(blankGame());
     S.cur = S.games[0].id;
-  }
-  else if (a === "up" || a === "down"){
-    const i = Number(b.dataset.i), j = a === "up" ? i-1 : i+1;
-    if (j < 0 || j > 8) return;
-    [g.lineup[i], g.lineup[j]] = [g.lineup[j], g.lineup[i]];
-    if (g.subs.length) toast("注意：交代記録がある試合で打順を入れ替えました");
   }
   else if (a === "addSub"){
     const e = { inn: Number(document.getElementById("sInn").value)||1, kind: document.getElementById("sKind").value,
@@ -489,6 +629,11 @@ document.addEventListener("change", ev => {
     const pos = t.value === "守備位置変更";
     document.getElementById("sPidWrap").style.display = pos ? "none" : "";
     return;
+  }
+  else if (t.dataset.act === "setDP"){
+    // DPは打順の中で1人。元のDPの守備は空にする
+    g.lineup.forEach(s => { if (s.pos === "DP") s.pos = ""; });
+    if (t.value !== "") g.lineup[Number(t.value)].pos = "DP";
   }
   else if (t.dataset.g){ g[t.dataset.g] = t.value; }
   else if (t.dataset.slot !== undefined){
