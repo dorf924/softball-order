@@ -174,6 +174,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .gtool svg,.gac svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .btn:disabled{opacity:.4}
 .gclean{width:100%;border:1px dashed #c9b27a;background:#fbf7ea;color:#7a6224;border-radius:12px;padding:10px;font-size:13px;font-weight:600;margin-bottom:10px}
+.gempty{text-align:center;padding:40px 10px;color:#7a837e;display:flex;flex-direction:column;gap:6px}.gempty b{font-size:16px;color:#33403a}
 .gmh{font-size:12px;font-weight:800;color:#7a8a80;letter-spacing:.08em;margin:14px 4px 6px}
 .gmh:first-child{margin-top:2px}
 .gi{background:#fff;border-radius:14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,51,40,.06),0 4px 14px rgba(15,51,40,.06);overflow:hidden;cursor:pointer;
@@ -197,10 +198,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .glu b{width:22px;color:var(--main)}
 .glu .gp{width:28px;font-size:12px;font-weight:700;color:#8a6d1c}
 .gac{display:flex;gap:8px;justify-content:space-between;padding:4px 14px 14px}
-#snack{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,140%);display:flex;align-items:center;gap:14px;
+#snack{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,24px);opacity:0;visibility:hidden;pointer-events:none;
+ transition:transform .3s cubic-bezier(.2,.85,.25,1),opacity .25s,visibility 0s .3s;display:flex;align-items:center;gap:14px;
  background:#1d2b25;color:#fff;border-radius:14px;padding:10px 10px 10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:30;
- transition:transform .3s cubic-bezier(.2,.85,.25,1);white-space:nowrap}
-#snack.on{transform:translate(-50%,0)}
+ white-space:nowrap}
+#snack.on{transform:translate(-50%,0);opacity:1;visibility:visible;pointer-events:auto;transition:transform .3s cubic-bezier(.2,.85,.25,1),opacity .25s}
 #snack button{border:0;background:var(--gold);color:#1d2b25;font-weight:800;border-radius:10px;padding:7px 12px;font-size:13px}
 .home .sec button{flex-direction:column;padding:10px 4px 9px;font-size:12px;gap:4px;white-space:nowrap}
 .home .sec svg{width:21px;height:21px}
@@ -310,8 +312,7 @@ function load(){
 }
 function normalize(){
   if (!S || !Array.isArray(S.players)) S = { team: "", players: [], games: [], cur: "", tab: "players" };
-  if (!S.games.length){ const g = blankGame(); S.games.push(g); S.cur = g.id; }
-  if (!S.games.find(g => g.id === S.cur)) S.cur = S.games[0].id;
+  if (!S.games.find(g => g.id === S.cur)) S.cur = latestGame() ? latestGame().id : "";
   if (S.tab === "subs" || S.tab === "sheet") S.tab = "order";
   if (!S.year){ const d = new Date(); S.year = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; }
 }
@@ -332,6 +333,8 @@ function plabel(id){ const p = P(id); return p ? (p.num !== "" ? "#"+p.num+" " :
 function posLabel(k){ if (!k) return "—"; return /^\d$/.test(k) ? k+" "+POS[k] : POS[k]; }
 function sortedPlayers(){ return S.players.filter(p => !p.grad).sort((a,b) => (Number(a.num)||999) - (Number(b.num)||999) || a.name.localeCompare(b.name,"ja")); }
 function G(){ return S.games.find(g => g.id === S.cur); }
+function latestGame(){ return [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||""))[0]; }
+function ensureGame(){ if (G()) return; const l = latestGame(); if (l){ S.cur = l.id; return; } const g = blankGame(); S.games.push(g); S.cur = g.id; save(); }
 function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = "none", 1800); }
 function fmtDate(d){ if (!d) return ""; const [y,m,dd] = d.split("-"); const w = "日月火水木金土"[new Date(d).getDay()]; return `${Number(m)}/${Number(dd)}(${w})`; }
 function gameTitle(g){ return [fmtDate(g.date), g.title, g.opp ? "vs "+g.opp : ""].filter(Boolean).join(" "); }
@@ -488,7 +491,7 @@ function noticeHtml(){
 }
 /* ===== 描画 ===== */
 function render(){
-  const g = G();
+  if (S.tab === "order") ensureGame();
   const home = S.tab === "home";
   document.body.classList.toggle("is-home", home);
   document.getElementById("hWord").textContent = (brand().name ? brand().name + " " : "") + "DUGOUT";
@@ -604,15 +607,15 @@ function vGames(){
       ? `<button class="btn w s" data-act="gSelCancel">キャンセル</button><span class="gcount">${gSel.size}件選択</span><button class="btn r s" data-act="gDelSel" ${gSel.size ? "" : "disabled"}>${ICON.trash}削除</button>`
       : `<button class="btn s" data-act="homeNew">${ICON.plus}新しい試合</button><span class="gcount">${list.length}試合</span><button class="btn w s" data-act="gSelStart">選んで削除</button>`}
   </div>
-  ${empties && !selMode && list.length > 1 ? `<button class="gclean" data-act="gDelEmpty">中身が空の試合 ${empties}件をまとめて削除</button>` : ""}
+  ${!list.length ? `<div class="gempty"><b>試合はありません</b><span>「＋新しい試合」から作れます</span></div>` : ""}
+  ${empties && !selMode ? `<button class="gclean" data-act="gDelEmpty">中身が空の試合 ${empties}件をまとめて削除</button>` : ""}
   <div class="glist">${rows}</div>`;
 }
 let delBak = null;
 function deleteGames(ids){
   delBak = { games: JSON.parse(JSON.stringify(S.games)), cur: S.cur };
   S.games = S.games.filter(x => !ids.includes(x.id));
-  if (!S.games.length) S.games.push(blankGame());
-  if (!S.games.find(x => x.id === S.cur)) S.cur = [...S.games].sort((a,b) => (b.date||"").localeCompare(a.date||""))[0].id;
+  if (!S.games.find(x => x.id === S.cur)) S.cur = latestGame() ? latestGame().id : "";
   const sn = document.getElementById("snack");
   document.getElementById("snackTx").textContent = `${ids.length}試合を削除しました`;
   sn.classList.add("on"); clearTimeout(deleteGames.t); deleteGames.t = setTimeout(() => { sn.classList.remove("on"); delBak = null; }, 7000);
@@ -1180,7 +1183,7 @@ function vData(){
     ${brand().logo ? `<div class="seg2"><span>背景</span>
       <button data-act="logoBg" data-v="green" class="${brand().bg !== "white" ? "on" : ""}">緑</button>
       <button data-act="logoBg" data-v="white" class="${brand().bg === "white" ? "on" : ""}">白</button></div>` : ""}
-    <div class="btns"><button class="btn s" data-act="saveTeam">文字を保存</button></div>
+    <div class="btns"><button class="btn s" data-act="saveTeam">保存</button></div>
     <p class="muted" style="margin:10px 0 0">正方形で、背景が透明か白のロゴ画像がきれいに出ます。</p>
   </section>
   <section class="card">
@@ -1209,7 +1212,7 @@ function vData(){
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-tab],[data-act]");
   if (!b || b.tagName === "SELECT" || b.type === "checkbox") return;
-  if (b.dataset.tab){ S.tab = b.dataset.tab; editId = ""; pick = null; gSel = null; gOpen = b.dataset.tab === "games" ? S.cur : gOpen; save(); render(); window.scrollTo(0,0); return; }
+  if (b.dataset.tab){ document.getElementById("snack").classList.remove("on"); S.tab = b.dataset.tab; editId = ""; pick = null; gSel = null; gOpen = b.dataset.tab === "games" ? S.cur : gOpen; save(); render(); window.scrollTo(0,0); return; }
   const g = G(), a = b.dataset.act;
   if (a === "savePlayer"){
     const name = document.getElementById("fName").value.trim();
@@ -1305,8 +1308,7 @@ document.addEventListener("click", ev => {
   else if (a === "delGame"){
     if (!confirm("この試合を削除しますか？")) return;
     S.games = S.games.filter(x => x.id !== g.id);
-    if (!S.games.length) S.games.push(blankGame());
-    S.cur = S.games[0].id;
+    S.cur = latestGame() ? latestGame().id : ""; S.tab = "games";
   }
   else if (a === "addSub"){
     const e = { inn: Number(document.getElementById("sInn").value)||1, kind: document.getElementById("sKind").value,
@@ -1360,6 +1362,7 @@ document.addEventListener("change", ev => {
     g.lineup.forEach(s => { if (s.pos === "DP") s.pos = ""; });
     if (t.value !== "") g.lineup[Number(t.value)].pos = "DP";
   }
+  else if (t.id === "brandName" || t.id === "teamName"){ S.team = document.getElementById("teamName").value.trim(); brand().name = document.getElementById("brandName").value.trim(); applyBrandIcon(); }
   else if (t.dataset.g){ g[t.dataset.g] = t.value; }
   else if (t.dataset.slot !== undefined){
     const s = t.dataset.slot === "F" ? g.flex : g.lineup[Number(t.dataset.slot)];
