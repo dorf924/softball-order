@@ -528,21 +528,7 @@ function wordmarkHtml(){
   const fs = Math.max(20, Math.min(42, Math.floor(300 / (w * 1.22))));
   return `<div class="wm wm2"><span class="bn" style="font-size:${fs}px">${esc(n)}</span><span class="du">DUGOUT</span></div>`;
 }
-/* ロゴからホーム画面用アイコンを作る（iPhoneのSafariで追加するとき用） */
-function brandIcon(size){
-  const b = brand(); if (!b.logo || !brandImg || !brandImg.complete || !brandImg.naturalWidth) return null;
-  const c = document.createElement("canvas"); c.width = c.height = size; const x = c.getContext("2d");
-  if (b.bg === "white"){ x.fillStyle = "#fff"; x.fillRect(0,0,size,size); }
-  else { const gr = x.createRadialGradient(size/2, size*.35, 0, size/2, size/2, size*.75); gr.addColorStop(0,"#2a6b55"); gr.addColorStop(1,"#0f3328"); x.fillStyle = gr; x.fillRect(0,0,size,size); }
-  const pad = size * .14, box = size - pad*2, r = Math.min(box / brandImg.naturalWidth, box / brandImg.naturalHeight);
-  const w = brandImg.naturalWidth * r, h = brandImg.naturalHeight * r;
-  x.drawImage(brandImg, (size-w)/2, (size-h)/2, w, h);
-  return c.toDataURL("image/png");
-}
 function applyBrandIcon(){
-  const l = document.querySelector('link[rel="apple-touch-icon"]');
-  const d = brandIcon(180);
-  l.href = d || "icon-180.png";
   document.title = (brand().name ? brand().name + " " : "") + "DUGOUT｜ソフトボール オーダー管理";
 }
 
