@@ -165,6 +165,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 /* ===== 試合履歴 ===== */
 .st{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#eceee9;color:#66706b;white-space:nowrap}
 .st.ok{background:#e3f1e6;color:#1e7a45}.st.live{background:#fbe9e7;color:#b03a2e}
+.gbar .gsel{flex:1 1 auto;min-width:0}
 .gsel{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #d3dbd4;border-radius:10px;padding:0 10px;height:34px;font-size:14px;color:#222;font-weight:600}
 .gsel span{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gsel svg{width:16px;height:16px;fill:none;stroke:var(--main);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
@@ -229,6 +230,28 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--main);bo
 .seg2 button{border:1px solid var(--main);background:#fff;color:var(--main);border-radius:999px;padding:5px 14px;font-size:13px}
 .seg2 button.on{background:var(--main);color:#fff}
 
+/* ===== タブレット ===== */
+.home .acts{width:100%;max-width:540px;margin:0 auto}
+@media (min-width:700px){
+  main{max-width:860px;padding:16px 20px 0}
+  .fld{height:330px}
+  .pbox{height:52px}
+  .pbox .pl{font-size:12px}.pbox .pn{font-size:18px}.pbox .pn small{font-size:12px}
+  .lr{height:42px}.lr .o{font-size:18px}.lr .p span{width:44px;height:30px;font-size:17px}
+  .lr .n span{font-size:18px;padding:5px 12px}.lr .b{font-size:17px}
+  .lh{height:32px;font-size:14px}
+  .lh,.lr{grid-template-columns:52px 60px 1fr 70px}
+  .bchip{height:42px;font-size:18px}
+  .gbar button,.gbar select,.gsel{height:40px;font-size:15px}
+  .home .emb{width:120px;height:120px;border-radius:28px}
+  .home .wm{font-size:52px}
+}
+@media (min-width:1000px) and (orientation:landscape){
+  main{max-width:1180px}
+  .board{display:grid;grid-template-columns:1.05fr 1fr;gap:16px;align-items:start}
+  .board .fld{height:auto;aspect-ratio:1/0.92;margin:0;position:sticky;top:76px}
+}
+
 /* ===== 画面切り替え ===== */
 main.go-in{animation:slideIn .42s cubic-bezier(.2,.85,.25,1)}
 header.go-in{animation:fadeIn .3s ease}
@@ -239,7 +262,9 @@ header.go-in{animation:fadeIn .3s ease}
 .gbar .plus{font-size:20px;font-weight:700;padding:0 12px;line-height:1}
 
 /* ===== タイトル画面 ===== */
-html{background:var(--deep)}
+html{background:var(--bg)}
+html:has(body.is-home){background:var(--deep)}
+body{min-height:100vh}
 body.is-home{background:var(--deep);position:fixed;inset:0;overflow:hidden;padding:0;overscroll-behavior:none;touch-action:manipulation}
 html:has(body.is-home){overflow:hidden;overscroll-behavior:none}
 body.is-home main#app{position:absolute;inset:0;padding:0;overflow:hidden}
@@ -690,7 +715,7 @@ function fieldHtml(slots, flex, live, dpSlot){
     const [x,y] = k === "DP" ? [17,178] : FXY[k], id = at[k], p = P(id);
     const fp = flex && flex.pid && flex.pid === id && k !== "DP";
     const cls = "pbox" + (k === "DP" ? " dpb" : "") + (p ? "" : " empty") + (live && pick && pick.t==="pos" && pick.v===k ? " sel" : "");
-    return `<div class="${cls}" ${live?`data-dt="pos" data-dv="${k}"`:""} style="left:${x}%;top:${y}px">
+    return `<div class="${cls}" ${live?`data-dt="pos" data-dv="${k}"`:""} style="left:${x}%;top:${y/2}%">
       <div class="pl">${k === "DP" ? (dpSlot >= 0 && slots.findIndex(s => s.pos === "DP") !== dpSlot && id ? "OPO（打撃のみ）" : "DP（指名選手）") : POS_FULL[k]}${fp ? `<span class="fpt">FP</span>` : ""}</div><div class="pn">${p ? esc(p.name)+(p.num!==""?`<small>${esc(p.num)}</small>`:"") : "—"}</div></div>`;
   }).join("");
   return `<div class="fld">
@@ -754,6 +779,7 @@ function vOrder(){
       <button class="btn r s" data-act="delGame">削除</button>
     </div>
   </section>` : ""}
+  <div class="board">
   ${fieldHtml(bd.slots, bd.flex, true, live ? bd.c.dpSlot : -1)}
   <div class="ls${live?" live":""}">
     <div class="lh"><div>打順</div><div>守備</div><div>名前${!live && !errs.length ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">✓ OK</span>` : live ? `<span style="color:#e8d48a;font-weight:normal;margin-left:8px">試合中（交代は自動記録）</span>` : ""}</div><div>背番号</div></div>
@@ -761,6 +787,7 @@ function vOrder(){
     ${bd.flex ? row("FP", "F", bd.flex, g.flex) : ""}
     <div class="lsep" data-dt="benchArea">${live ? "控え・退いた選手" : "控え選手（ここに落とすとベンチへ）"}</div>
     <div class="bgrid">${bench.length ? bench.map(benchChip).join("") : `<span class="muted">なし</span>`}</div>
+  </div>
   </div>
   ${errs.length ? `<div class="msg err olist">${errs.map(esc).join("<br>")}</div>` : ""}
   ${live && bd.c.warns.length ? `<div class="msg err olist">ルール違反の記録があります（交代タブで確認）：<br>${bd.c.warns.map(esc).join("<br>")}</div>` : ""}
