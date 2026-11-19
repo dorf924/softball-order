@@ -139,7 +139,6 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 <nav>
  <button data-tab="players">選手</button>
  <button data-tab="order">オーダー</button>
- <button data-tab="subs">交代</button>
  <button data-tab="sheet">メンバー表</button>
  <button data-tab="data">データ</button>
 </nav>
@@ -167,6 +166,7 @@ function load(){
   if (!S || !Array.isArray(S.players)) S = { team: "", players: [], games: [], cur: "", tab: "players" };
   if (!S.games.length){ const g = blankGame(); S.games.push(g); S.cur = g.id; }
   if (!S.games.find(g => g.id === S.cur)) S.cur = S.games[0].id;
+  if (S.tab === "subs") S.tab = "order";
 }
 function save(){
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -698,7 +698,10 @@ function vSubs(){
     <p class="muted">代打・代走で守備を「—」のままにすると「代打」「代走」と表示します。守備に就いたら「守備位置変更」で位置を入れてください。</p>
     <button class="btn" data-act="addSub">記録する</button>
   </section>
-  <section class="card">
+  ${subsLog(g, c)}`;
+}
+function subsLog(g, c){
+  return `<section class="card">
     <h2>交代の記録（${g.subs.length}件）</h2>
     ${g.subs.length ? `<table><tr><th>回</th><th>内容</th><th></th></tr>${g.subs.map((e,i)=>`<tr>
       <td class="num">${esc(e.inn)}</td>
@@ -707,10 +710,11 @@ function vSubs(){
         : `${e.slot==="F"?"FLEX":(Number(e.slot)+1)+"番"} ${esc(e.kind)}：${esc(pname(e.outPid)||"—")} → <b>${esc(pname(e.pid))}</b>${e.pos?"（"+esc(posLabel(e.pos))+"）":""}`}
         ${c.evNotes[i]?`<span class="tag re">${c.evNotes[i]}</span>`:""}</td>
       <td><button class="btn r s" data-act="delSub" data-i="${i}">取消</button></td></tr>`).join("")}</table>
-      <p class="muted">取り消すと、それ以降の交代も含めて自動で計算し直します。</p>`
+      <p class="muted">取り消すと、それ以降の交代も含めて自動で計算し直します。間違いの修正はオーダー画面の「↶戻す」が簡単です。</p>`
       : `<p class="muted">まだ交代はありません。</p>`}
   </section>`;
 }
+
 
 function currentTable(g, c){
   const rows = c.slots.map((s,i)=>{
@@ -753,7 +757,8 @@ function vSheet(){
     </table>
     <div style="margin-top:10px;font-size:13px"><b>控え：</b>${bench.map(p=>esc((p.num!==""?"#"+p.num+" ":"")+p.name)).join("、") || "なし"}</div>
   </section>
-  ${fieldHtml(base.slots, base.flex, false, base.dp)}`;
+  ${fieldHtml(base.slots, base.flex, false, base.dp)}
+  ${g.subs.length ? subsLog(g, c) : ""}`;
 }
 function sheetText(){
   const g = G(); const c = computeCurrent(g);
