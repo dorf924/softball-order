@@ -1,6 +1,6 @@
 // オフライン用：一度開いたら端末に保存し、電波がなくても起動できるようにする
-const CACHE = "sb-order-v9";
-const FILES = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE = "sb-order-v10";
+const FILES = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-32.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
 });
