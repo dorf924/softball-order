@@ -95,6 +95,8 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gbar .dpbtn{font-size:12px;padding:0 8px}
 .gbar .dpbtn.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:bold}
 .trt td{padding:3px 4px}.trt .btn{padding:4px 8px}
+details.slog{margin-top:10px}
+details.slog summary{font-size:14px;font-weight:bold;color:var(--main);padding:8px 4px;cursor:pointer}
 .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:6px}
 .bchip{position:relative;background:var(--box);border:1px solid var(--boxl);border-radius:4px;height:32px;display:flex;align-items:center;justify-content:center;
  font-size:15px;font-weight:bold;white-space:nowrap;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -141,7 +143,6 @@ header .g{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 <nav>
  <button data-tab="players">選手</button>
  <button data-tab="order">オーダー</button>
- <button data-tab="sheet">メンバー表</button>
  <button data-tab="data">データ</button>
 </nav>
 <div id="toast"></div>
@@ -171,7 +172,7 @@ function normalize(){
   if (!S || !Array.isArray(S.players)) S = { team: "", players: [], games: [], cur: "", tab: "players" };
   if (!S.games.length){ const g = blankGame(); S.games.push(g); S.cur = g.id; }
   if (!S.games.find(g => g.id === S.cur)) S.cur = S.games[0].id;
-  if (S.tab === "subs") S.tab = "order";
+  if (S.tab === "subs" || S.tab === "sheet") S.tab = "order";
   if (!S.year){ const d = new Date(); S.year = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1; }
 }
 function save(){
@@ -351,7 +352,7 @@ function render(){
   document.getElementById("hdrGame").textContent = (S.team ? S.team + "　" : "") + gameTitle(g);
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === S.tab));
   const app = document.getElementById("app");
-  app.innerHTML = ({players: vPlayers, order: vOrder, subs: vSubs, sheet: vSheet, data: vData}[S.tab] || vPlayers)() + noticeHtml() + trHtml();
+  app.innerHTML = ({players: vPlayers, order: vOrder, subs: vSubs, data: vData}[S.tab] || vPlayers)() + noticeHtml() + trHtml();
 }
 
 function playerOptions(sel, excludeIds){
@@ -511,7 +512,12 @@ function vOrder(){
     : "名前をドラッグ（またはタップ→タップ）で入れ替え。<br>名前同士＝打順の入れ替え／守備欄・図の上＝守備の入れ替え／控えと＝選手の入れ替え"}
     ${g.useDP ? (live ? "<br>DP/FP：FPをDPの打順へ＝FPが打つ（DP退く）／DPをFPの守備へ＝DPが守る（FP退く）／DPを他の守備へ＝その選手は打撃のみ（OPO）"
                       : "<br>DP/FP：打順の選手を図の「DP」へ＝DPに指定／控えをFPの行へ入れ、FPを空いた守備へ") : ""}</p>
-  ${live ? `<div class="btns noprint"><button class="btn w s" data-act="trOpen">捕手の臨時代走は誰？</button></div>` : ""}
+  <div class="btns noprint">
+    <button class="btn s" data-act="pdf">PDFにする</button>
+    <button class="btn w s" data-act="copyText">LINE用にコピー</button>
+    ${live ? `<button class="btn w s" data-act="trOpen">捕手の臨時代走は誰？</button>` : ""}
+  </div>
+  ${live && g.subs.length ? `<details class="slog"><summary>交代の記録（${g.subs.length}件）</summary>${subsLog(g, bd.c)}</details>` : ""}
   ${askHtml()}`;
 }
 
@@ -734,7 +740,7 @@ function subsLog(g, c){
     ${g.subs.length ? `<table><tr><th>回</th><th>内容</th><th></th></tr>${g.subs.map((e,i)=>`<tr>
       <td class="num">${esc(e.inn)}</td>
       <td>${e.kind==="守備位置変更"
-        ? `${e.slot==="F"?"FLEX":(Number(e.slot)+1)+"番"} 守備位置変更 → ${esc(posLabel(e.pos))}`
+        ? `${e.slot==="F"?"FLEX":(Number(e.slot)+1)+"番"} 守備位置変更 → ${e.pos === "DP" && String(e.slot) !== String(c.dpSlot) ? "打撃のみ（OPO）" : esc(posLabel(e.pos))}`
         : `${e.slot==="F"?"FLEX":(Number(e.slot)+1)+"番"} ${esc(e.kind)}：${esc(pname(e.outPid)||"—")} → <b>${esc(pname(e.pid))}</b>${e.pos?"（"+esc(posLabel(e.pos))+"）":""}`}
         ${c.evNotes[i]?`<span class="tag re">${c.evNotes[i]}</span>`:""}</td>
       <td><button class="btn r s" data-act="delSub" data-i="${i}">取消</button></td></tr>`).join("")}</table>
@@ -756,45 +762,144 @@ function currentTable(g, c){
 }
 
 /* --- メンバー表 --- */
-let sheetMode = "start";
-function vSheet(){
-  const g = G();
-  const c = computeCurrent(g);
-  const base = sheetMode === "start"
-    ? { slots: g.lineup, flex: g.useDP ? g.flex : null, dp: -1 }
-    : { slots: c.slots, flex: c.flex, dp: c.dpSlot };
-  const used = base.slots.map(s=>s.pid).concat(base.flex ? [base.flex.pid] : []);
-  const bench = sortedPlayers().filter(p => !used.includes(p.id) && !(sheetMode==="now" && c.out.has(p.id)));
-  const row = (lb, s) => { const p = P(s.pid) || {}; return `<tr><td>${lb}</td><td>${esc(posLabel(s.pos))}</td><td>${esc(p.num)}</td><td class="nm">${esc(p.name)}</td><td>${esc(p.bt||"")}</td></tr>`; };
-  return `
-  <section class="card noprint">
-    <div class="btns" style="margin-top:0">
-      <button class="btn ${sheetMode==="start"?"":"w"} s" data-act="mode" data-m="start">スタメン</button>
-      <button class="btn ${sheetMode==="now"?"":"w"} s" data-act="mode" data-m="now">交代後（現在）</button>
-      <button class="btn w s" data-act="print">印刷</button>
-      <button class="btn w s" data-act="copyText">文字でコピー（LINE用）</button>
-    </div>
-    ${validate(g).length ? `<div class="msg err">オーダーに未入力・重複があります（「オーダー」画面で確認）</div>` : ""}
-  </section>
-  <section class="card sheet">
-    <h3>${esc(S.team || "メンバー表")}</h3>
-    <div class="info">${esc(gameTitle(g))}${g.place?"　"+esc(g.place):""}　${esc(g.side)}${sheetMode==="now"?"　（交代後）":""}</div>
-    <table><tr><th style="width:44px">打順</th><th style="width:60px">守備</th><th style="width:48px">背番</th><th>氏名</th><th style="width:80px">投打</th></tr>
-      ${base.slots.map((s,i)=>row(i+1, s)).join("")}
-      ${base.flex ? row("FLEX", base.flex) : ""}
-    </table>
-    <div style="margin-top:10px;font-size:13px"><b>控え：</b>${bench.map(p=>esc((p.num!==""?"#"+p.num+" ":"")+p.name)).join("、") || "なし"}</div>
-  </section>
-  ${fieldHtml(base.slots, base.flex, false, base.dp)}
-  ${g.subs.length ? subsLog(g, c) : ""}`;
+/* ===== メンバー表PDF（アプリ内で作成・電波不要） ===== */
+function sheetBase(){
+  const g = G(), c = computeCurrent(g), live = isLive();
+  return live ? { g, c, live, slots: c.slots, flex: c.flex && c.flex.pid ? c.flex : null, dp: c.dpSlot }
+              : { g, c, live, slots: g.lineup, flex: g.useDP ? g.flex : null, dp: -1 };
 }
 function sheetText(){
-  const g = G(); const c = computeCurrent(g);
-  const base = sheetMode === "start" ? { slots: g.lineup, flex: g.useDP ? g.flex : null } : { slots: c.slots, flex: c.flex };
-  const lines = [`【${gameTitle(g)}】${g.side}`];
-  base.slots.forEach((s,i) => lines.push(`${i+1}. (${POS[s.pos]||"—"}) ${plabel(s.pid)}`));
-  if (base.flex) lines.push(`FLEX (${POS[base.flex.pos]||"—"}) ${plabel(base.flex.pid)}`);
+  const b = sheetBase(), g = b.g;
+  const lines = [`【${gameTitle(g)}】${g.side}${b.live ? "（現在のオーダー）" : ""}`];
+  b.slots.forEach((s,i) => lines.push(`${i+1}. (${s.pos === "DP" && b.live && i !== b.dp ? "OPO" : (POS[s.pos]||"—")}) ${plabel(s.pid)}`));
+  if (b.flex) lines.push(`FP (${POS[b.flex.pos]||"—"}) ${plabel(b.flex.pid)}`);
   return lines.join("\n");
+}
+function drawSheet(){
+  const b = sheetBase(), g = b.g;
+  const W = 1240, H = 1754, M = 90, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"), F = "'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif";
+  const GREEN = "#1b4d3e", GOLD = "#b8973a", LINE = "#9aa5a0";
+  x.fillStyle = "#fff"; x.fillRect(0,0,W,H);
+  x.textBaseline = "middle";
+  const txt = (t, px, py, size, opt = {}) => { x.font = `${opt.bold ? "bold " : ""}${size}px ${F}`; x.fillStyle = opt.color || "#222"; x.textAlign = opt.align || "left"; x.fillText(t, px, py, opt.max || 2000); };
+  // 見出し
+  let y = 120;
+  txt(S.team || "メンバー表", W/2, y, 52, {bold:true, align:"center"});
+  y += 62;
+  txt([gameTitle(g), g.place, g.side].filter(Boolean).join("　") + (b.live ? "　（交代後・現在）" : ""), W/2, y, 28, {align:"center", color:"#444"});
+  y += 50;
+  // 表
+  const cols = [["打順",110],["守備",170],["背番号",130],["氏名",460],["投打",190]];
+  const tw = cols.reduce((a,c) => a + c[1], 0), tx = (W - tw) / 2, rh = 60;
+  x.fillStyle = GREEN; x.fillRect(tx, y, tw, rh);
+  x.fillStyle = GOLD; x.fillRect(tx, y + rh - 5, tw, 5);
+  let cx = tx; cols.forEach(([t,w]) => { txt(t, cx + w/2, y + rh/2 - 2, 28, {bold:true, color:"#fff", align:"center"}); cx += w; });
+  y += rh;
+  const rows = b.slots.map((s,i) => [String(i+1), s]).concat(b.flex ? [["FP", b.flex]] : []);
+  rows.forEach(([lb, s], r) => {
+    const p = P(s.pid) || {};
+    if (lb === "FP"){ x.fillStyle = "#f3f6f3"; x.fillRect(tx, y, tw, rh); }
+    const posT = s.pos === "DP" && b.live && r !== b.dp ? "OPO" : (s.pos ? (/^\d$/.test(s.pos) ? s.pos + " " + POS[s.pos] : POS[s.pos]) : "");
+    const vals = [lb, posT, p.num ?? "", p.name ?? "", p.bt ?? ""];
+    cx = tx;
+    vals.forEach((v, k) => {
+      const w = cols[k][1];
+      txt(String(v), k === 3 ? cx + 22 : cx + w/2, y + rh/2, k === 0 ? 32 : 32, {bold: k === 0 || k === 3, align: k === 3 ? "left" : "center", color: k === 0 ? GREEN : "#222", max: w - 30});
+      cx += w;
+    });
+    x.strokeStyle = LINE; x.lineWidth = 2; x.strokeRect(tx, y, tw, rh);
+    y += rh;
+  });
+  cx = tx; x.beginPath(); cols.slice(0,-1).forEach(([,w]) => { cx += w; x.moveTo(cx, y - rh * rows.length); x.lineTo(cx, y); }); x.stroke();
+  x.strokeStyle = GREEN; x.lineWidth = 3; x.strokeRect(tx, y - rh * (rows.length + 1), tw, rh * (rows.length + 1));
+  // 控え
+  y += 44;
+  const used = b.slots.concat(b.flex ? [b.flex] : []).map(s => s.pid);
+  const bench = sortedPlayers().filter(p => !used.includes(p.id) && !(b.live && b.c.out.has(p.id)));
+  txt("控え：" + (bench.map(p => (p.num !== "" ? "#" + p.num + " " : "") + p.name).join("、") || "なし"), tx, y, 28, {max: tw});
+  if (b.live && b.c.out.size){ y += 44; txt("退いた選手：" + [...b.c.out].map(pname).join("、"), tx, y, 26, {color:"#666", max: tw}); }
+  // 守備配置図
+  y += 50;
+  const fh = b.live && g.subs.length ? 380 : 470, fx = tx, fw = tw;
+  x.fillStyle = "#f3f7f1"; x.strokeStyle = "#c5d3c2"; x.lineWidth = 2;
+  x.beginPath(); x.roundRect ? x.roundRect(fx, y, fw, fh, 16) : x.rect(fx, y, fw, fh); x.fill(); x.stroke();
+  const P2 = (px, py) => [fx + fw * px / 100, y + fh * py / 200];
+  x.fillStyle = "#e3eddf"; x.strokeStyle = "#9fb89a"; x.lineWidth = 3;
+  x.beginPath(); [[50,186],[80,130],[50,74],[20,130]].forEach(([a,c],i) => { const [px,py] = P2(a,c); i ? x.lineTo(px,py) : x.moveTo(px,py); }); x.closePath(); x.fill(); x.stroke();
+  const at = {};
+  b.slots.concat(b.flex ? [b.flex] : []).forEach(s => { if (s.pid && /^\d$/.test(s.pos)) at[s.pos] = s.pid; });
+  const boxes = Object.entries(FXY);
+  const dpS = b.slots.find(s => s.pos === "DP" && s.pid);
+  if (dpS) boxes.push(["DP", [17,178]]);
+  boxes.forEach(([k,[px,py]]) => {
+    const [cx2, cy2] = P2(px, py), bw = fw * 0.29, bh = fh > 400 ? 78 : 66;
+    x.fillStyle = "#fff"; x.strokeStyle = k === "DP" ? GOLD : "#b9c4b8"; x.lineWidth = 2;
+    x.beginPath(); x.roundRect ? x.roundRect(cx2 - bw/2, cy2 - bh/2, bw, bh, 8) : x.rect(cx2 - bw/2, cy2 - bh/2, bw, bh); x.fill(); x.stroke();
+    const id = k === "DP" ? dpS.pid : at[k], p = P(id);
+    const lab = k === "DP" ? (b.live && b.slots.indexOf(dpS) !== b.dp ? "OPO" : "DP") : POS_FULL[k];
+    txt(lab + (b.flex && id && b.flex.pid === id ? "（FP）" : ""), cx2, cy2 - 20, 20, {bold:true, color:GREEN, align:"center"});
+    txt(p ? p.name + (p.num !== "" ? "  " + p.num : "") : "—", cx2, cy2 + 14, 28, {bold:true, align:"center", max: bw - 16});
+  });
+  y += fh + 40;
+  // 交代の記録（試合中）
+  if (b.live && g.subs.length){
+    txt("交代の記録", tx, y, 30, {bold:true, color:GREEN}); y += 44;
+    const lines = g.subs.map((e,i) => {
+      const sl = e.slot === "F" ? "FP" : (Number(e.slot)+1) + "番";
+      return `${e.inn}回　${sl}　` + (e.kind === "守備位置変更" ? `守備位置変更 → ${e.pos === "DP" && String(e.slot) !== String(b.dp) ? "打撃のみ（OPO）" : posLabel(e.pos)}` : `${e.kind}：${pname(e.outPid)||"—"} → ${pname(e.pid)}${e.pos ? "（" + posLabel(e.pos) + "）" : ""}`) + (b.c.evNotes[i] ? `　［${b.c.evNotes[i]}］` : "");
+    });
+    const room = Math.max(1, Math.floor((H - 70 - y) / 34));
+    const show = lines.length > room ? room - 1 : room;
+    lines.slice(0, show).forEach(l => { txt(l, tx + 10, y, 24, {max: tw - 20}); y += 34; });
+    if (lines.length > room) txt(`…ほか${lines.length - show}件（アプリの交代記録で確認できます）`, tx + 10, y, 24, {color:"#666"});
+  }
+  txt("DUGOUT", W - M, H - 40, 18, {color:"#aaa", align:"right"});
+  return cv;
+}
+function makePdf(cv){
+  const jpg = atob(cv.toDataURL("image/jpeg", 0.92).split(",")[1]);
+  const img = new Uint8Array(jpg.length); for (let i = 0; i < jpg.length; i++) img[i] = jpg.charCodeAt(i);
+  const enc = s => new TextEncoder().encode(s);
+  const parts = [], offs = []; let len = 0;
+  const push = u => { parts.push(u); len += u.length; };
+  const content = "q 595.28 0 0 841.89 0 0 cm /Im0 Do Q";
+  push(enc("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"));
+  const objs = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>",
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    null
+  ];
+  objs.forEach((o, i) => {
+    offs.push(len);
+    if (o !== null) push(enc(`${i+1} 0 obj\n${o}\nendobj\n`));
+    else {
+      push(enc(`${i+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${cv.width} /Height ${cv.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.length} >>\nstream\n`));
+      push(img); push(enc("\nendstream\nendobj\n"));
+    }
+  });
+  const xref = len;
+  let t = `xref\n0 ${objs.length+1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10,"0") + " 00000 n \n").join("");
+  t += `trailer\n<< /Size ${objs.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  push(enc(t));
+  return new Blob(parts, {type: "application/pdf"});
+}
+function exportPdf(){
+  const g = G();
+  const name = `メンバー表_${g.date || today()}${g.opp ? "_" + g.opp : ""}${isLive() ? "_現在" : ""}.pdf`.replace(/[\\/:*?"<>|]/g, "");
+  const blob = makePdf(drawSheet());
+  const file = new File([blob], name, {type: "application/pdf"});
+  if (navigator.canShare && navigator.canShare({files: [file]})){
+    navigator.share({files: [file], title: name}).catch(() => {});
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
 /* --- データ --- */
@@ -935,9 +1040,8 @@ document.addEventListener("click", ev => {
     afterGame(c);
   }
   else if (a === "delSub"){ if (!confirm("この交代を取り消しますか？")) return; g.subs.splice(Number(b.dataset.i), 1); }
-  else if (a === "mode"){ sheetMode = b.dataset.m; }
-  else if (a === "print"){ window.print(); return; }
   else if (a === "copyText"){ copyText(sheetText()); return; }
+  else if (a === "pdf"){ if (!isLive() && validate(g).length && !confirm("オーダーに未入力・重複があります。このままPDFにしますか？")) return; exportPdf(); return; }
   else if (a === "saveTeam"){ S.team = document.getElementById("teamName").value.trim(); toast("保存しました"); }
   else if (a === "export"){ exportData(); return; }
   else if (a === "import"){ document.getElementById("fileIn").click(); return; }
